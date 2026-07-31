@@ -1,0 +1,28 @@
+{
+  /*
+    Questo file dice a TypeScript COME controllare il nostro codice.
+    Non serve capirlo a memoria: è una configurazione "standard" per progetti React + Vite.
+  */
+  "compilerOptions": {
+    "target": "ES2020",              // versione di JavaScript in cui viene "tradotto" il nostro codice
+    "useDefineForClassFields": true,
+    "lib": ["ES2020", "DOM", "DOM.Iterable"], // librerie disponibili (DOM = funzioni del browser tipo document, window...)
+    "module": "ESNext",
+    "skipLibCheck": true,
+
+    /* Bundler mode: impostazioni pensate per l'uso con Vite */
+    "moduleResolution": "bundler",
+    "allowImportingTsExtensions": true,
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "noEmit": true,
+    "jsx": "react-jsx",              // permette di scrivere HTML dentro i file .tsx (JSX)
+
+    /* Regole di qualità del codice: TypeScript ci avvisa se dimentichiamo variabili non usate, ecc. */
+    "strict": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noFallthroughCasesInSwitch": true
+  },
+  "include": ["src"]
+}

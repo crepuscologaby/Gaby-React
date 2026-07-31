@@ -1,0 +1,19 @@
+<!--
+  Questo è l'UNICO file HTML "vero" di tutto il sito (è una Single Page Application: SPA).
+  Tutto il resto della pagina viene generato da React dentro al <div id="root">.
+-->
+<!doctype html>
+<html lang="it">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Gaby React</title>
+  </head>
+  <body>
+    <!-- React "monta" (cioè disegna) tutta l'app dentro questo div vuoto -->
+    <div id="root"></div>
+
+    <!-- Questo script carica il nostro codice React (vedi src/main.tsx) -->
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

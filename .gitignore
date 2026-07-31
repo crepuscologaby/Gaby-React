@@ -1,0 +1,13 @@
+# Cartella con tutte le librerie scaricate da npm: è enorme e si rigenera con "npm install",
+# quindi non va mai caricata su GitHub
+node_modules
+
+# Cartella generata da "npm run build": è il sito "impacchettato" pronto per andare online,
+# viene ricreata automaticamente ad ogni deploy
+dist
+
+# File con le tue chiavi segrete: NON va MAI condiviso o caricato online
+.env
+
+# File di sistema/editor che non servono al progetto
+.DS_Store

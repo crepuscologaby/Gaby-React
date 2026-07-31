@@ -1,0 +1,13 @@
+/*
+  Queste 3 righe "attivano" Tailwind: durante la build vengono sostituite
+  con tutte le classi CSS di cui il progetto ha bisogno.
+*/
+@tailwind base;       /* stili di base/reset (es. margini a 0, font di default) */
+@tailwind components; /* eventuali componenti CSS riutilizzabili che definiremo noi */
+@tailwind utilities;  /* le classi "di utilità" tipo bg-black, p-4, text-white ecc. */
+
+/* Da qui in giù possiamo aggiungere stili globali personalizzati, se servono */
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
