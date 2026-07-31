@@ -3,7 +3,7 @@ import { useEffect, useState, useRef } from "react";
 interface Station {
   name: string;
 }
-
+  
 interface Prognosis {
   departure: string | null;
   arrival: string | null;
