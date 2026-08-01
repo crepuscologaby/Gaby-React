@@ -125,8 +125,19 @@ export default function DbPage() {
 
         // Se esiste già un'istanza di spreadsheet, la distruggiamo
         // prima di crearne una nuova (evita duplicati al re-render)
+        // Il destroy va gestito in modo sicuro: a seconda della versione/
+        // configurazione, jspreadsheet può restituire un singolo oggetto
+        // con .destroy(), oppure un array di istanze (una per worksheet).
         if (instanceRef.current) {
-          instanceRef.current.destroy();
+          if (typeof instanceRef.current.destroy === 'function') {
+            instanceRef.current.destroy();
+          } else if (Array.isArray(instanceRef.current)) {
+            instanceRef.current.forEach((istanza: any) => {
+              if (istanza && typeof istanza.destroy === 'function') {
+                istanza.destroy();
+              }
+            });
+          }
         }
 
         if (spreadsheetRef.current) {
@@ -228,9 +239,20 @@ export default function DbPage() {
 
     // Cleanup: quando il componente viene smontato, distruggiamo lo spreadsheet
     return () => {
-      if (instanceRef.current) {
-        instanceRef.current.destroy();
-      }
+        // Il destroy va gestito in modo sicuro: a seconda della versione/
+        // configurazione, jspreadsheet può restituire un singolo oggetto
+        // con .destroy(), oppure un array di istanze (una per worksheet).
+        if (instanceRef.current) {
+          if (typeof instanceRef.current.destroy === 'function') {
+            instanceRef.current.destroy();
+          } else if (Array.isArray(instanceRef.current)) {
+            instanceRef.current.forEach((istanza: any) => {
+              if (istanza && typeof istanza.destroy === 'function') {
+                istanza.destroy();
+              }
+            });
+          }
+        }
     };
   }, []); // [] = eseguito una sola volta al caricamento della pagina
 
