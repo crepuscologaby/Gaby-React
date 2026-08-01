@@ -53,15 +53,19 @@ export default function DbPage() {
       try {
         const response = await fetch('/api/clienti');
         if (!response.ok) {
-          // Proviamo a leggere il messaggio di errore preciso
-          // restituito dall'endpoint (es. quello che manda Supabase)
-          let dettaglio = '';
+          // Leggiamo SEMPRE come testo grezzo prima (una Response si può
+          // leggere una sola volta), poi proviamo a interpretarlo come JSON
+          const testoGrezzo = await response.text();
+
+          let dettaglio = testoGrezzo;
           try {
-            const bodyErrore = await response.json();
-            dettaglio = bodyErrore.error || '';
+            const bodyErrore = JSON.parse(testoGrezzo);
+            dettaglio = bodyErrore.error || testoGrezzo;
           } catch {
-            dettaglio = await response.text();
+            // Non era JSON valido: usiamo il testo grezzo così com'è
+            // (dettaglio è già stato impostato sopra)
           }
+
           throw new Error(
             `Errore nel caricamento dei dati (status ${response.status}): ${dettaglio}`
           );
