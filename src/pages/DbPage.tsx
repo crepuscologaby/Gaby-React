@@ -248,7 +248,10 @@ export default function DbPage() {
   }, []); // [] = eseguito una sola volta al caricamento della pagina
 
   return (
-    <section className="px-4 pt-2 flex flex-col items-center text-center">
+    <section
+      className="px-4 flex flex-col items-center text-center overflow-hidden"
+      style={{ height: 'calc(100vh - 100px)' }}
+    >
 
       {/* Messaggio di stato durante il salvataggio */}
       {saving && <p className="text-blue-600 mb-2">Salvataggio in corso...</p>}
