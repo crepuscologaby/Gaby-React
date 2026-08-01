@@ -145,7 +145,8 @@ export default function DbPage() {
 
         if (spreadsheetRef.current) {
           instanceRef.current = jspreadsheet(spreadsheetRef.current, {
-            tableOverflow: false,
+            tableOverflow: true,
+            tableHeight: '60vh',
 
             // Nella versione attuale di jspreadsheet-ce, i dati e le colonne
             // vanno dichiarati dentro l'array "worksheets". Noi ne usiamo uno solo.
@@ -261,7 +262,7 @@ export default function DbPage() {
           che sull'intera pagina */}
       <div
         className="w-full max-w-[95vw] border border-gray-300 rounded"
-        style={{ height: '70vh', overflowX: 'auto', overflowY: 'auto' }}
+        style={{ overflowX: 'auto' }}
       >
         <div ref={spreadsheetRef}></div>
       </div>
