@@ -38,7 +38,7 @@ interface ApiResponse {
   connections: Connection[];
 }
 
-export default function TreniPage() {
+export default function TempoRealePage() {
   const [fermate, setFermate] = useState<PassCheckpoint[]>([]);
   const [errore, setErrore] = useState<string | null>(null);
   const [caricamento, setCaricamento] = useState<boolean>(true);
@@ -248,7 +248,7 @@ export default function TreniPage() {
             <canvas
               ref={canvasRef}
               width={420}
-              height={fermate.length * 80 + 30}
+              height={fermate.length * 100 + 30}
               className="block"
             />
           </div>

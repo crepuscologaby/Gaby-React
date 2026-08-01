@@ -13,7 +13,11 @@ export default async function handler(_req: any, res: any) {
     from: "Milano",
     to: "Bern",
   });
+// Ogni fields[] è un campo che l'API DEVE includere nella risposta:
+  // se non lo elenchiamo qui, anche se esiste non viene restituito.
   params.append("fields[]", "connections/sections/journey/passList");
+  params.append("fields[]", "connections/sections/journey/category");
+  params.append("fields[]", "connections/sections/journey/number");
 
   const url = `https://transport.opendata.ch/v1/connections?${params.toString()}`;
 
