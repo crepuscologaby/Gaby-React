@@ -159,6 +159,7 @@ export default function DbPage() {
             ) => {
               // records contiene tutte le celle cambiate in quella modifica
               for (const record of records) {
+                console.log('DEBUG onafterchanges - record ricevuto:', record);
                 // record.x e record.y arrivano come stringhe (es. "0", "3"),
                 // le convertiamo in numeri per usarle come indici degli array
                 const indiceRiga = Number(record.y);
