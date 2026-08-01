@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { useState } from "react";
+import { useState, useRef } from "react";
 
 type SubmenuVoice = {
   label: string;
@@ -45,15 +45,38 @@ function SearchIcon() {
 }
 
 export default function Navbar() {
-  const [isHoveringTrigger, setIsHoveringTrigger] = useState(false);
-  const [isHoveringPanel, setIsHoveringPanel] = useState(false);
-  const isTreniOpen = isHoveringTrigger || isHoveringPanel;
-  // Chiude forzatamente il pannello quando si clicca un link al suo interno,
-  // anche se il mouse non si è ancora spostato via (altrimenti il pannello
-  // resterebbe sopra al contenuto della pagina appena aperta, nascondendolo).
+const [isTreniOpen, setIsTreniOpen] = useState(false);
+
+  // Teniamo traccia di un'eventuale chiusura programmata: quando il mouse
+  // esce da "Treni" o dal pannello, invece di chiudere SUBITO aspettiamo
+  // 200ms. Se nel frattempo il mouse rientra (es. sta solo passando dal
+  // link al pannello sottostante), annulliamo la chiusura — così il menu
+  // non sparisce più "a scatti" quando ci si passa sopra ripetutamente.
+  const timeoutChiusura = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const apriMenu = () => {
+    if (timeoutChiusura.current) {
+      clearTimeout(timeoutChiusura.current);
+      timeoutChiusura.current = null;
+    }
+    setIsTreniOpen(true);
+  };
+
+  const chiudiMenuConRitardo = () => {
+    timeoutChiusura.current = setTimeout(() => {
+      setIsTreniOpen(false);
+    }, 200);
+  };
+
+  // Chiude forzatamente e SENZA ritardo quando si clicca un link,
+  // altrimenti il pannello resterebbe visibile per un istante sopra
+  // al contenuto della nuova pagina appena aperta.
   const chiudiMenu = () => {
-    setIsHoveringTrigger(false);
-    setIsHoveringPanel(false);
+    if (timeoutChiusura.current) {
+      clearTimeout(timeoutChiusura.current);
+      timeoutChiusura.current = null;
+    }
+    setIsTreniOpen(false);
   };
 
   return (
@@ -70,8 +93,8 @@ export default function Navbar() {
 
           <div
             className="pb-6 -mb-6"
-            onMouseEnter={() => setIsHoveringTrigger(true)}
-            onMouseLeave={() => setIsHoveringTrigger(false)}
+            onMouseEnter={apriMenu}
+            onMouseLeave={chiudiMenuConRitardo}
           >
             <Link to="/treni" className="hover:text-gray-300">
               Treni
@@ -93,8 +116,8 @@ export default function Navbar() {
 
       {isTreniOpen && (
         <div
-          onMouseEnter={() => setIsHoveringPanel(true)}
-          onMouseLeave={() => setIsHoveringPanel(false)}
+          onMouseEnter={apriMenu}
+          onMouseLeave={chiudiMenuConRitardo}
           className="absolute top-full left-0 w-full bg-white text-black px-8 py-6 shadow-lg z-20 flex justify-center gap-16"
         >
           {TRENI_SUBMENU.map((item) => (
