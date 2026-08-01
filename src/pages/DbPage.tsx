@@ -159,6 +159,10 @@ export default function DbPage() {
                 freezeColumns: 3,
                 // Attiva il pannello dei filtri per questo foglio
                 filters: true,              
+                // Mostra 20 righe per pagina, con un menu a tendina per
+                // scegliere anche 10, 20, 50 o 100 righe per pagina
+                pagination: 20,
+                paginationOptions: [10, 20, 50, 100],
               },
             ],
 
@@ -257,7 +261,7 @@ export default function DbPage() {
           che sull'intera pagina */}
       <div
         className="w-full max-w-[95vw] border border-gray-300 rounded"
-        style={{ height: '85vh', overflowX: 'auto', overflowY: 'auto' }}
+        style={{ height: '70vh', overflowX: 'auto', overflowY: 'auto' }}
       >
         <div ref={spreadsheetRef}></div>
       </div>
