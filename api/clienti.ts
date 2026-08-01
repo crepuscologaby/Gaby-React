@@ -24,7 +24,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    const { data, error } = await supabase.from('Clienti').select('*');
+    const { data, error, count } = await supabase
+      .from('Clienti')
+      .select('*', { count: 'exact' });
+
+    // LOG TEMPORANEO: lo vedremo nei log di Vercel per capire cosa succede
+    console.log('DEBUG Clienti - count:', count, 'data length:', data?.length, 'error:', error);
 
     if (error) {
       return res.status(500).json({ error: error.message });
