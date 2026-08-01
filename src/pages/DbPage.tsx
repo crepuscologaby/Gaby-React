@@ -244,7 +244,7 @@ export default function DbPage() {
   }, []); // [] = eseguito una sola volta al caricamento della pagina
 
   return (
-    <section className="min-h-screen px-8 pt-20 flex flex-col items-center text-center">
+    <section className="min-h-screen px-8 pt-4 flex flex-col items-center text-center">
 
       {/* Messaggio di stato durante il salvataggio */}
       {saving && <p className="text-blue-600 mb-2">Salvataggio in corso...</p>}
@@ -257,7 +257,7 @@ export default function DbPage() {
           che sull'intera pagina */}
       <div
         className="w-full max-w-[95vw] border border-gray-300 rounded"
-        style={{ height: '60vh', overflowX: 'auto', overflowY: 'auto' }}
+        style={{ height: '85vh', overflowX: 'auto', overflowY: 'auto' }}
       >
         <div ref={spreadsheetRef}></div>
       </div>
