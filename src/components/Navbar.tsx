@@ -8,11 +8,12 @@ type SubmenuVoice = {
 
 type TreniSubItem = {
   label: string;
+  path?: string; // Il punto di domanda rende la proprietà opzionale
   submenu?: SubmenuVoice[];
 };
 
 const TRENI_SUBMENU: TreniSubItem[] = [
-  { label: "Ricerca" },
+  { label: "Ricerca", path: "/treni/ricerca" },
   { 
     label: "Milano-Berna", 
     submenu: [
@@ -21,7 +22,7 @@ const TRENI_SUBMENU: TreniSubItem[] = [
       { label: "Tempo reale", path: "/treni/milano-berna/tempo-reale" }
     ] 
   },
-  { label: "Help" },
+  { label: "Help", path: "/treni/help" },
 ];
 
 function ArrowIcon() {
@@ -47,7 +48,7 @@ export default function Navbar() {
   const isTreniOpen = isHoveringTrigger || isHoveringPanel;
 
   return (
-    <div className="relative">
+    <div className="sticky top-0 z-50">
       <nav className="bg-black text-white flex items-center px-8 py-4">
         <Link to="/" className="text-xl font-bold">
           Gaby React
