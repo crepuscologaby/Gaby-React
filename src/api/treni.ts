@@ -2,9 +2,10 @@
 // Vercel riconosce automaticamente ogni file dentro /api come un endpoint:
 // questo file diventerà disponibile all'indirizzo /api/treni
 
-// Usiamo tipi generici (any) per request/response invece di importare
-// pacchetti extra: così non serve installare nulla in più.
-export default async function handler(res: any) {
+// Il prefisso "_" davanti a "_req" dice a Vercel/TypeScript "so che non lo uso,
+// ma deve restare al suo posto" perché la piattaforma chiama sempre handler(req, res)
+// in quest'ordine — se tolgo il primo parametro, "res" riceve per sbaglio "req".
+export default async function handler(_req: any, res: any) {
   // Costruiamo l'URL corretto dell'API dei treni.
   // "from" e "to" sono le stazioni, "fields[]" dice all'API quali dati vogliamo indietro
   // (qui chiediamo esplicitamente la lista di fermate con orari previsti/reali).
