@@ -51,8 +51,14 @@ export default function TreniPage() {
         "Accept": "application/json"
       }
     })
-      .then((res) => {
-        if (!res.ok) throw new Error("Errore di risposta del server");
+      .then(async (res) => {
+        if (!res.ok) {
+          // Leggiamo il corpo della risposta come testo per vedere il messaggio
+          // di errore vero restituito dalla nostra API route (es. "Errore dall'API esterna dei treni")
+          // invece di nascondere tutto dietro una frase generica.
+          const testoErrore = await res.text();
+          throw new Error(`Errore server (status ${res.status}): ${testoErrore}`);
+        }
         return res.json() as Promise<ApiResponse>;
       })
       .then((data) => {
