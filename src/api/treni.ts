@@ -23,17 +23,26 @@ export default async function handler(_req: any, res: any) {
     });
 
     if (!apiRes.ok) {
-      // Se l'API esterna risponde con errore, lo giriamo al frontend
-      // con un messaggio chiaro invece di far esplodere il parsing JSON.
-      res.status(apiRes.status).json({ error: "Errore dall'API esterna dei treni" });
+      // Leggiamo il corpo di errore restituito da transport.opendata.ch
+      // così possiamo vedere ESATTAMENTE perché ha rifiutato la richiesta
+      // (es. parametri mancanti, stazione non valida, ecc.)
+      const dettaglioErrore = await apiRes.text();
+      res.status(apiRes.status).json({
+        error: "Errore dall'API esterna dei treni",
+        dettaglio: dettaglioErrore,
+      });
       return;
     }
 
     const data = await apiRes.json();
     // Restituiamo i dati così come sono al frontend.
     res.status(200).json(data);
-  } catch (err) {
-    // Errore di rete (server non raggiungibile, timeout, ecc.)
-    res.status(500).json({ error: "Impossibile contattare il servizio treni" });
-  }
+    } catch (err) {
+        // Errore di rete o eccezione imprevista: includiamo il messaggio originale
+        // per capire se è un problema di connessione, di parsing, o altro.
+        res.status(500).json({
+        error: "Impossibile contattare il servizio treni",
+        dettaglio: err instanceof Error ? err.message : String(err),
+        });
+    }
 }
