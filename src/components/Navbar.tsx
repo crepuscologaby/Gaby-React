@@ -121,7 +121,7 @@ export default function Navbar() {
                     <Link 
                       key={voice.label} 
                       to={voice.path}
-                      className={'relative group/voice flex items-center cursor-pointer select-none no-underline ${voice.muted ? "text-gray-400" : "text-black"}'}
+                      className={`relative group/voice flex items-center cursor-pointer select-none no-underline ${voice.muted ? "text-gray-400" : "text-black"}`}
                     >
                       {/* IL BULLET */}
                       <span className="absolute left-0 w-1.5 h-1.5 rounded-full bg-black opacity-0 transition-opacity duration-100 group-hover/voice:opacity-100 group-hover/voice:duration-[750ms]" />

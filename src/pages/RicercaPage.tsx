@@ -1,4 +1,4 @@
-export default function PartenzePage() {
+export default function RicercaPage() {
   return (
     <section className="min-h-screen px-8 py-16">
       <h1 className="text-4xl font-bold mb-4">Sezione Partenza</h1>

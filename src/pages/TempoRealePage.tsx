@@ -14,11 +14,16 @@ interface PassCheckpoint {
   station: Station;
   arrival: string | null;
   departure: string | null;
-  prognosis: Prognosis; 
+  prognosis: Prognosis;
+  // Valorizzato SOLO sulla fermata dove si cambia treno, con il nome del nuovo treno
+  // (es. "IC 5"). Su tutte le altre fermate resta undefined.
+  cambioTreno?: string;
 }
 
 interface Journey {
   passList: PassCheckpoint[];
+  category?: string; // es. "IC", "EC", "R" — il tipo di treno
+  number?: string;   // es. "5", "832" — il numero del treno
 }
 
 interface Section {
@@ -66,9 +71,25 @@ export default function TreniPage() {
           const sezioni = data.connections[0].sections;
           const listaStazioni: PassCheckpoint[] = [];
           
-          sezioni.forEach((sezione) => {
+          // Ogni "sezione" (section) rappresenta UN treno. Se ce ne sono più di una,
+          // vuol dire che c'è un cambio treno alla stazione di passaggio.
+          sezioni.forEach((sezione, indiceSezione) => {
             if (sezione.journey?.passList) {
-              listaStazioni.push(...sezione.journey.passList);
+              // Costruiamo un'etichetta tipo "IC 5" combinando categoria e numero del treno
+              const codiceTreno = [sezione.journey.category, sezione.journey.number]
+                .filter(Boolean)
+                .join(" ");
+
+              sezione.journey.passList.forEach((fermata, indiceFermata) => {
+                // La PRIMA fermata di ogni sezione successiva alla prima è il punto
+                // esatto in cui si scende da un treno e si sale sul successivo.
+                const isCambio = indiceSezione > 0 && indiceFermata === 0;
+
+                listaStazioni.push({
+                  ...fermata,
+                  cambioTreno: isCambio ? codiceTreno : undefined,
+                });
+              });
             }
           });
           
@@ -114,11 +135,11 @@ export default function TreniPage() {
     
     const xLineaVerde = 110;        
     const yIniziale = 40;          
-    const spaziaturaVerticale = 80; 
+    const spaziaturaVerticale = 100; 
     const altezzaTotale = (fermate.length - 1) * spaziaturaVerticale;
 
     ctx.beginPath();
-    ctx.strokeStyle = "#006666";   
+    ctx.strokeStyle = "#f97316";   
     ctx.lineWidth = 10;            
     ctx.lineCap = "round";         
     ctx.moveTo(xLineaVerde, yIniziale);
@@ -168,13 +189,21 @@ export default function TreniPage() {
       ctx.fillStyle = "#ffffff";    
       ctx.fill();
       ctx.lineWidth = 3.5;          
-      ctx.strokeStyle = haRitardo ? "#dc2626" : "#006666";
+      ctx.strokeStyle = haRitardo ? "#dc2626" : "#f97316";
       ctx.stroke();
 
       const isEstremo = i === 0 || i === fermate.length - 1;
       ctx.font = isEstremo ? "bold 16px sans-serif" : "15px sans-serif";
       ctx.fillStyle = haRitardo ? "#991b1b" : "#000000";
       ctx.fillText(fermata.station.name, xLineaVerde + 25, yCorrente);
+
+      // Se questa è una fermata di cambio treno, scriviamo sotto il nome
+      // della stazione il codice del nuovo treno (es. "Cambio: IC 5")
+      if (fermata.cambioTreno) {
+        ctx.font = "italic 12px sans-serif";
+        ctx.fillStyle = "#f97316"; // stesso arancione della linea, per coerenza visiva
+        ctx.fillText(`Cambio: ${fermata.cambioTreno}`, xLineaVerde + 25, yCorrente + 16);
+      }
     });
   }, [fermate]); 
 
