@@ -6,6 +6,7 @@ import type { VercelRequest, VercelResponse } from '@vercel/node';
 
 const supabaseUrl = process.env.SUPABASE_URL as string;
 const supabaseKey = process.env.SUPABASE_SERVICE_KEY as string;
+
 const supabase = createClient(supabaseUrl, supabaseKey);
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
