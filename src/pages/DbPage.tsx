@@ -131,8 +131,7 @@ export default function DbPage() {
 
         if (spreadsheetRef.current) {
           instanceRef.current = jspreadsheet(spreadsheetRef.current, {
-            tableOverflow: true,
-            tableHeight: '500px',
+            tableOverflow: false,
 
             // Nella versione attuale di jspreadsheet-ce, i dati e le colonne
             // vanno dichiarati dentro l'array "worksheets". Noi ne usiamo uno solo.
@@ -140,8 +139,15 @@ export default function DbPage() {
               {
                 data: rows,
                 columns: columns,
+
+                // Blocca le prime 3 colonne (id, client_id, created_at)
+                // così restano visibili anche scorrendo verso destra
+                freezeColumns: 3,
               },
             ],
+
+            // Attiva la riga dei filtri sopra le intestazioni di colonna
+            filters: true,
 
             // A questo livello (fuori da worksheets) jspreadsheet-ce chiama
             // questa funzione ogni volta che l'utente modifica una o più
@@ -223,8 +229,11 @@ export default function DbPage() {
       {/* Messaggio di errore, se presente */}
       {error && <p className="text-red-600 mb-2">{error}</p>}
 
-      {/* Contenitore dove Jspreadsheet monta la tabella */}
-      <div ref={spreadsheetRef} className="w-full"></div>
+      {/* Contenitore esterno con dimensioni fisse: qui appaiono le
+        barre di scorrimento, invece che sull'intera pagina */}
+      <div className="w-full max-w-[95vw] overflow-auto border border-gray-300 rounded">
+        <div ref={spreadsheetRef}></div>
+      </div>
     </section>
   );
 }
