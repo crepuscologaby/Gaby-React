@@ -95,7 +95,7 @@ export default function Navbar() {
         <div
           onMouseEnter={() => setIsHoveringPanel(true)}
           onMouseLeave={() => setIsHoveringPanel(false)}
-          className="absolute top-full left-0 w-full bg-white text-black px-8 py-6 shadow-lg z-20 flex gap-16"
+          className="absolute top-full left-0 w-full bg-white text-black px-8 py-6 shadow-lg z-20 flex justify-center gap-16"
         >
           {TRENI_SUBMENU.map((item) => (
             <div key={item.label} className="group cursor-pointer">
