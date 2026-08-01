@@ -159,10 +159,9 @@ export default function DbPage() {
                 freezeColumns: 3,
                 // Attiva il pannello dei filtri per questo foglio
                 filters: true,              
-                // Mostra 20 righe per pagina, con un menu a tendina per
-                // scegliere anche 10, 20, 50 o 100 righe per pagina
-                pagination: 20,
-                paginationOptions: [10, 20, 50, 100],
+                // Mostra 15 righe per pagina, con un menu a tendina per
+                pagination: 15,
+                paginationOptions: [10, 15, 20, 50, 100],
               },
             ],
 
@@ -248,10 +247,7 @@ export default function DbPage() {
   }, []); // [] = eseguito una sola volta al caricamento della pagina
 
   return (
-    <section
-      className="px-4 flex flex-col items-center text-center overflow-hidden"
-      style={{ height: 'calc(100vh - 100px)' }}
-    >
+    <section className="px-4 pt-2 flex flex-col items-center text-center">
 
       {/* Messaggio di stato durante il salvataggio */}
       {saving && <p className="text-blue-600 mb-2">Salvataggio in corso...</p>}
@@ -263,8 +259,8 @@ export default function DbPage() {
           barre di scorrimento (sia verticale che orizzontale), invece
           che sull'intera pagina */}
       <div
-        className="w-full max-w-[95vw] border border-gray-300 rounded"
-        style={{ flex: 1, overflow: 'auto', minHeight: 0 }}
+        className="w-full max-w-[95vw] border border-gray-300 rounded mb-4"
+        style={{ overflowX: 'auto' }}
       >
         <div ref={spreadsheetRef}></div>
       </div>
