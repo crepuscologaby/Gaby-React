@@ -24,13 +24,13 @@ export default function App() {
       {/* La barra di navigazione è fuori dalle Routes: così resta visibile in ogni pagina */}
       <Navbar />
 
-      {/* Routes decide QUALE pagina mostrare in base all'indirizzo (URL) corrente */}
-      <Routes>
       {/* pt-20 spinge tutto il contenuto sotto l'altezza del menu fisso,
           altrimenti la parte alta di ogni pagina finirebbe nascosta dietro la Navbar.
           Se il menu è più alto/basso di quanto previsto, regola questo valore
           (es. pt-16, pt-24) finché il contenuto non parte esattamente sotto il menu. */}
-        <div className="pt-20">
+      <div className="pt-20">
+      {/* Routes decide QUALE pagina mostrare in base all'indirizzo (URL) corrente */}
+        <Routes>
           <Route path="/" element={<HomePage />} />
 
           {/* path="/treni" = sezione con le informazioni sui treni (transport.opendata.ch) */}
@@ -48,8 +48,8 @@ export default function App() {
           <Route path="/treni/milano-berna/tempo-reale" element={<TempoRealePage />} />
           <Route path="/treni/help" element={<HelpPage />} />
           <Route path="/treni/ricerca" element={<RicercaPage />} />
-        </div>        {/* path="/" = home page, cioè l'indirizzo principale del sito */}
-      </Routes>
+        </Routes>
+      </div>
     </BrowserRouter>
   );
 }
