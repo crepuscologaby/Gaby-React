@@ -40,7 +40,8 @@ export default function TreniPage() {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
   useEffect(() => {
-    const url = "https://opendata.ch";
+    // Chiamiamo la NOSTRA API route (stesso dominio), non più opendata.ch direttamente.
+    const url = "/api/treni";
     setCaricamento(true);
     setErrore(null);
 
