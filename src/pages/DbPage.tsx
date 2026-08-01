@@ -52,9 +52,22 @@ export default function DbPage() {
     async function loadData() {
       try {
         const response = await fetch('/api/clienti');
-        if (!response.ok) throw new Error('Errore nel caricamento dei dati');
-        const clienti = await response.json();
+        if (!response.ok) {
+          // Proviamo a leggere il messaggio di errore preciso
+          // restituito dall'endpoint (es. quello che manda Supabase)
+          let dettaglio = '';
+          try {
+            const bodyErrore = await response.json();
+            dettaglio = bodyErrore.error || '';
+          } catch {
+            dettaglio = await response.text();
+          }
+          throw new Error(
+            `Errore nel caricamento dei dati (status ${response.status}): ${dettaglio}`
+          );
+        }
 
+        const clienti = await response.json();
         if (!clienti || clienti.length === 0) {
           setError('Nessun dato trovato nella tabella Clienti');
           return;
