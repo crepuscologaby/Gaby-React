@@ -174,11 +174,7 @@ export default function TreniPage() {
 
   return (
     <section className="min-h-screen px-8 py-16 bg-gray-50">
-      <h1 className="text-4xl font-bold mb-4">Sezione Treni</h1>
-      <p className="text-gray-600 mb-8">
-        Passa il mouse su "Treni" nel menu in alto per vedere le voci disponibili.
-      </p>
-
+      <h1 className="text-4xl font-bold mb-4">Sezione Treni in tempo reale</h1>
       <div className="mt-8 max-w-xl bg-white p-6 rounded-xl border border-gray-100 shadow-md">
         <h2 className="text-xl font-semibold mb-6 text-gray-800">
           Percorso Ultimo Treno Partito: <span className="text-emerald-700">Milano ➔ Berna</span>
