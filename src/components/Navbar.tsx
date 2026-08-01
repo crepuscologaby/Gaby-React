@@ -4,25 +4,27 @@ import { useState } from "react";
 type SubmenuVoice = {
   label: string;
   path: string;
+  muted?: boolean; // true = testo grigio invece che nero
 };
 
 type TreniSubItem = {
   label: string;
   path?: string; // Il punto di domanda rende la proprietà opzionale
   submenu?: SubmenuVoice[];
+  muted?: boolean; // true = testo grigio invece che nero
 };
 
 const TRENI_SUBMENU: TreniSubItem[] = [
-  { label: "Ricerca", path: "/treni/ricerca" },
+  { label: "Ricerca", path: "/treni/ricerca", muted: true },
   { 
     label: "Milano-Berna", 
     submenu: [
-      { label: "Partenze", path: "/treni/milano-berna/partenze" },
-      { label: "Percorso", path: "/treni/milano-berna/percorso" },
-      { label: "Tempo reale", path: "/treni/milano-berna/tempo-reale" }
+      { label: "Partenze", path: "/treni/milano-berna/partenze", muted: true },
+      { label: "Percorso", path: "/treni/milano-berna/percorso", muted: true },
+      { label: "Tempo reale", path: "/treni/milano-berna/tempo-reale" } // resta nero
     ] 
   },
-  { label: "Help", path: "/treni/help" },
+  { label: "Help", path: "/treni/help", muted: true },
 ];
 
 function ArrowIcon() {
@@ -48,7 +50,7 @@ export default function Navbar() {
   const isTreniOpen = isHoveringTrigger || isHoveringPanel;
 
   return (
-    <div className="sticky top-0 z-50">
+    <div className="fixed top-0 left-0 w-full z-50">
       <nav className="bg-black text-white flex items-center px-8 py-4">
         <Link to="/" className="text-xl font-bold">
           Gaby React
@@ -90,17 +92,36 @@ export default function Navbar() {
         >
           {TRENI_SUBMENU.map((item) => (
             <div key={item.label} className="group cursor-pointer">
-              <div className="flex items-center gap-2">
-                <span className="font-semibold tracking-wide">{item.label}</span>
-                <ArrowIcon />
-              </div>
+              {/* Se la voce ha un "path" (Ricerca, Help) la avvolgiamo in un Link
+                  così il click naviga davvero. Se invece ha un "submenu" (Milano-Berna)
+                  resta un div, perché non deve navigare ma solo mostrare le sotto-voci. */}
+              {item.path ? (
+                <Link
+                  to={item.path}
+                  className={`flex items-center gap-2 no-underline ${
+                    item.muted ? "text-gray-400" : "text-black"
+                  }`}
+                >
+                  <span className="font-semibold tracking-wide">{item.label}</span>
+                  <ArrowIcon />
+                </Link>
+              ) : (
+                <div
+                  className={`flex items-center gap-2 ${
+                    item.muted ? "text-gray-400" : "text-black"
+                  }`}
+                >
+                  <span className="font-semibold tracking-wide">{item.label}</span>
+                  <ArrowIcon />
+                </div>
+              )}
               {item.submenu && (
                 <div className="flex flex-col mt-3 gap-2">
                   {item.submenu.map((voice) => (
                     <Link 
                       key={voice.label} 
                       to={voice.path}
-                      className="relative group/voice flex items-center cursor-pointer select-none text-black no-underline"
+                      className={'relative group/voice flex items-center cursor-pointer select-none no-underline ${voice.muted ? "text-gray-400" : "text-black"}'}
                     >
                       {/* IL BULLET */}
                       <span className="absolute left-0 w-1.5 h-1.5 rounded-full bg-black opacity-0 transition-opacity duration-100 group-hover/voice:opacity-100 group-hover/voice:duration-[750ms]" />

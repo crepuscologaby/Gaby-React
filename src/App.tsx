@@ -14,6 +14,8 @@ import AiPage from "./pages/AiPage";
 import PartenzePage from "./pages/PartenzePage";
 import PercorsoPage from "./pages/PercorsoPage";
 import TempoRealePage from "./pages/TempoRealePage";
+import RicercaPage from "./pages/RicercaPage";
+import HelpPage from "./pages/HelpPage";
 
 export default function App() {
   return (
@@ -24,22 +26,29 @@ export default function App() {
 
       {/* Routes decide QUALE pagina mostrare in base all'indirizzo (URL) corrente */}
       <Routes>
-        {/* path="/" = home page, cioè l'indirizzo principale del sito */}
-        <Route path="/" element={<HomePage />} />
+      {/* pt-20 spinge tutto il contenuto sotto l'altezza del menu fisso,
+          altrimenti la parte alta di ogni pagina finirebbe nascosta dietro la Navbar.
+          Se il menu è più alto/basso di quanto previsto, regola questo valore
+          (es. pt-16, pt-24) finché il contenuto non parte esattamente sotto il menu. */}
+        <div className="pt-20">
+          <Route path="/" element={<HomePage />} />
 
-        {/* path="/treni" = sezione con le informazioni sui treni (transport.opendata.ch) */}
-        <Route path="/treni" element={<TreniPage />} />
+          {/* path="/treni" = sezione con le informazioni sui treni (transport.opendata.ch) */}
+          <Route path="/treni" element={<TreniPage />} />
 
-        {/* path="/db" = sezione con i dati recuperati dal database SQL */}
-        <Route path="/db" element={<DbPage />} />
+          {/* path="/db" = sezione con i dati recuperati dal database SQL */}
+          <Route path="/db" element={<DbPage />} />
 
-        {/* path="/ai" = sezione con l'assistente AI privato (testo, immagini, PDF) */}
-        <Route path="/ai" element={<AiPage />} />
+          {/* path="/ai" = sezione con l'assistente AI privato (testo, immagini, PDF) */}
+          <Route path="/ai" element={<AiPage />} />
 
-        {/* 2. ABBINAMENTO SOTTO-PAGINE AI RISPETTIVI LINK */}
-        <Route path="/treni/milano-berna/partenze" element={<PartenzePage />} />
-        <Route path="/treni/milano-berna/percorso" element={<PercorsoPage />} />
-        <Route path="/treni/milano-berna/tempo-reale" element={<TempoRealePage />} />
+          {/* 2. ABBINAMENTO SOTTO-PAGINE AI RISPETTIVI LINK */}
+          <Route path="/treni/milano-berna/partenze" element={<PartenzePage />} />
+          <Route path="/treni/milano-berna/percorso" element={<PercorsoPage />} />
+          <Route path="/treni/milano-berna/tempo-reale" element={<TempoRealePage />} />
+          <Route path="/treni/help" element={<HelpPage />} />
+          <Route path="/treni/ricerca" element={<RicercaPage />} />
+        </div>        {/* path="/" = home page, cioè l'indirizzo principale del sito */}
       </Routes>
     </BrowserRouter>
   );
