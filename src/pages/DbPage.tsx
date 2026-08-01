@@ -248,7 +248,7 @@ export default function DbPage() {
   }, []); // [] = eseguito una sola volta al caricamento della pagina
 
   return (
-    <section className="min-h-screen px-8 pt-4 flex flex-col items-center text-center">
+    <section className="px-4 pt-2 flex flex-col items-center text-center">
 
       {/* Messaggio di stato durante il salvataggio */}
       {saving && <p className="text-blue-600 mb-2">Salvataggio in corso...</p>}
@@ -259,8 +259,8 @@ export default function DbPage() {
       {/* Contenitore esterno con dimensioni fisse: qui appaiono le
           barre di scorrimento (sia verticale che orizzontale), invece
           che sull'intera pagina */}
-      <div
-        className="w-full max-w-[95vw] border border-gray-300 rounded"
+        <div
+        className="w-full max-w-[95vw] border border-gray-300 rounded mb-4"
         style={{ overflowX: 'auto' }}
       >
         <div ref={spreadsheetRef}></div>
