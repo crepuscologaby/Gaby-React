@@ -91,6 +91,7 @@ export default function DbPage() {
               type: 'checkbox' as const,
               title: key,
               width: 100,
+              filter: true,
             };
           }
 
@@ -101,6 +102,7 @@ export default function DbPage() {
               title: key,
               width: 180,
               options: { format: 'YYYY-MM-DD HH:mm' },
+              filter: true,
             };
           }
 
@@ -110,6 +112,7 @@ export default function DbPage() {
             title: key,
             width: 150,
             readOnly: colonneSolaLettura.includes(key),
+            filter: true,
           };
         });
 
@@ -157,8 +160,7 @@ export default function DbPage() {
               },
             ],
 
-            // Attiva la riga dei filtri sopra le intestazioni di colonna
-            filters: true,
+
 
             // A questo livello (fuori da worksheets) jspreadsheet-ce chiama
             // questa funzione ogni volta che l'utente modifica una o più
