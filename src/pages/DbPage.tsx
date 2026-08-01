@@ -262,9 +262,9 @@ export default function DbPage() {
       {/* Contenitore esterno con dimensioni fisse: qui appaiono le
           barre di scorrimento (sia verticale che orizzontale), invece
           che sull'intera pagina */}
-        <div
-        className="w-full max-w-[95vw] border border-gray-300 rounded mb-4"
-        style={{ overflowX: 'auto' }}
+      <div
+        className="w-full max-w-[95vw] border border-gray-300 rounded"
+        style={{ flex: 1, overflow: 'auto', minHeight: 0 }}
       >
         <div ref={spreadsheetRef}></div>
       </div>
