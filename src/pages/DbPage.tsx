@@ -163,46 +163,28 @@ export default function DbPage() {
             // A questo livello (fuori da worksheets) jspreadsheet-ce chiama
             // questa funzione ogni volta che l'utente modifica una o più
             // celle e conferma (es. con Invio o cliccando fuori dalla cella).
-            onafterchanges: async (...args: any[]) => {
-              // DEBUG: stampiamo tutti gli argomenti ricevuti per capire
-              // esattamente la firma usata da questa versione della libreria.
-              // (rimuoveremo questo log una volta confermato il formato)
-              console.log('DEBUG onafterchanges - argomenti ricevuti:', args);
-
-              // Normalizziamo in un array di modifiche, qualunque sia la forma
-              // in cui arrivano (array di oggetti, singolo oggetto, o
-              // parametri separati x/y/value)
-              let modifiche: { x: any; y: any; value: any }[] = [];
-
-              const possibileTerzoParam = args[2];
-
-              if (Array.isArray(possibileTerzoParam)) {
-                // Caso 1: il terzo argomento è già un array di modifiche
-                modifiche = possibileTerzoParam;
-              } else if (
-                possibileTerzoParam &&
-                typeof possibileTerzoParam === 'object' &&
-                'x' in possibileTerzoParam
-              ) {
-                // Caso 2: il terzo argomento è un singolo oggetto {x, y, value}
-                modifiche = [possibileTerzoParam];
-              } else if (args.length >= 5) {
-                // Caso 3: i parametri arrivano separati, tipo
-                // (instance, worksheetInstance, x, y, value, ...)
-                modifiche = [{ x: args[2], y: args[3], value: args[4] }];
-              }
-
-              for (const record of modifiche) {
+// Chiamata da Jspreadsheet ogni volta che l'utente modifica
+            // una o più celle e conferma (es. con Invio o cliccando fuori).
+            // Firma reale: (instance, records) — records è un array di
+            // oggetti {x, y, value, ...}
+            onafterchanges: async (_instance: any, records: any[]) => {
+              for (const record of records) {
+                // record.x e record.y arrivano come stringhe (es. "0", "3"),
+                // le convertiamo in numeri per usarle come indici degli array
                 const indiceRiga = Number(record.y);
                 const indiceColonna = Number(record.x);
 
                 const rowId = rowIdsRef.current[indiceRiga];
                 const columnName = columnNamesRef.current[indiceColonna];
 
+                // Non salviamo le colonne di sola lettura o se qualcosa
+                // non torna con gli indici
                 if (!columnName || colonneSolaLettura.includes(columnName)) continue;
 
                 let nuovoValore = record.value;
 
+                // Se la colonna è data_privacy, riconvertiamo il testo
+                // leggibile in formato ISO prima di inviarlo al database
                 if (columnName === 'data_privacy') {
                   nuovoValore = formatDataPerSalvataggio(nuovoValore);
                 }
@@ -228,6 +210,7 @@ export default function DbPage() {
                 }
               }
             },
+
           } as any); // "as any" bypassa i tipi TS non ancora perfettamente allineati alla libreria
         }
       } catch (err: any) {
