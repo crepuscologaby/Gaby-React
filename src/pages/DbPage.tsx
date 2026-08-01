@@ -157,7 +157,8 @@ export default function DbPage() {
                 // Blocca le prime 3 colonne (id, client_id, created_at)
                 // così restano visibili anche scorrendo verso destra
                 freezeColumns: 3,
-              },
+                // Attiva il pannello dei filtri per questo foglio
+                filters: true,              },
             ],
 
 
@@ -165,7 +166,7 @@ export default function DbPage() {
             // A questo livello (fuori da worksheets) jspreadsheet-ce chiama
             // questa funzione ogni volta che l'utente modifica una o più
             // celle e conferma (es. con Invio o cliccando fuori dalla cella).
-// Chiamata da Jspreadsheet ogni volta che l'utente modifica
+            // Chiamata da Jspreadsheet ogni volta che l'utente modifica
             // una o più celle e conferma (es. con Invio o cliccando fuori).
             // Firma reale: (instance, records) — records è un array di
             // oggetti {x, y, value, ...}
@@ -255,8 +256,12 @@ export default function DbPage() {
       {error && <p className="text-red-600 mb-2">{error}</p>}
 
       {/* Contenitore esterno con dimensioni fisse: qui appaiono le
-        barre di scorrimento, invece che sull'intera pagina */}
-      <div className="w-full max-w-[95vw] overflow-auto border border-gray-300 rounded">
+          barre di scorrimento (sia verticale che orizzontale), invece
+          che sull'intera pagina */}
+      <div
+        className="w-full max-w-[95vw] border border-gray-300 rounded"
+        style={{ height: '70vh', overflow: 'auto' }}
+      >
         <div ref={spreadsheetRef}></div>
       </div>
     </section>
