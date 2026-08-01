@@ -4,7 +4,7 @@
 
 // Usiamo tipi generici (any) per request/response invece di importare
 // pacchetti extra: così non serve installare nulla in più.
-export default async function handler(req: any, res: any) {
+export default async function handler(res: any) {
   // Costruiamo l'URL corretto dell'API dei treni.
   // "from" e "to" sono le stazioni, "fields[]" dice all'API quali dati vogliamo indietro
   // (qui chiediamo esplicitamente la lista di fermate con orari previsti/reali).
