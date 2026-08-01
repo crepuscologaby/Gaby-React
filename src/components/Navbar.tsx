@@ -48,10 +48,17 @@ export default function Navbar() {
   const [isHoveringTrigger, setIsHoveringTrigger] = useState(false);
   const [isHoveringPanel, setIsHoveringPanel] = useState(false);
   const isTreniOpen = isHoveringTrigger || isHoveringPanel;
+  // Chiude forzatamente il pannello quando si clicca un link al suo interno,
+  // anche se il mouse non si è ancora spostato via (altrimenti il pannello
+  // resterebbe sopra al contenuto della pagina appena aperta, nascondendolo).
+  const chiudiMenu = () => {
+    setIsHoveringTrigger(false);
+    setIsHoveringPanel(false);
+  };
 
   return (
     <div className="fixed top-0 left-0 w-full z-50">
-      <nav className="bg-black text-white flex items-center px-8 py-4">
+      <nav className="bg-black text-white flex items-center px-8 h-20">
         <Link to="/" className="text-xl font-bold">
           Gaby React
         </Link>
@@ -98,6 +105,7 @@ export default function Navbar() {
               {item.path ? (
                 <Link
                   to={item.path}
+                  onClick={chiudiMenu}
                   className={`flex items-center gap-2 no-underline ${
                     item.muted ? "text-gray-400" : "text-black"
                   }`}
@@ -121,6 +129,7 @@ export default function Navbar() {
                     <Link 
                       key={voice.label} 
                       to={voice.path}
+                      onClick={chiudiMenu}
                       className={`relative group/voice flex items-center cursor-pointer select-none no-underline ${voice.muted ? "text-gray-400" : "text-black"}`}
                     >
                       {/* IL BULLET */}
