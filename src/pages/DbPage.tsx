@@ -145,8 +145,7 @@ export default function DbPage() {
 
         if (spreadsheetRef.current) {
           instanceRef.current = jspreadsheet(spreadsheetRef.current, {
-            tableOverflow: true,
-            tableHeight: '60vh',
+            tableOverflow: false,
 
             // Nella versione attuale di jspreadsheet-ce, i dati e le colonne
             // vanno dichiarati dentro l'array "worksheets". Noi ne usiamo uno solo.
