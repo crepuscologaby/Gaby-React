@@ -5,11 +5,13 @@
 // e per non superare i limiti di lunghezza) e salviamo una riga per blocco.
 
 import type { VercelRequest, VercelResponse } from "@vercel/node";
+import { extractText, getDocumentProxy } from "unpdf";
 import { supabaseServer } from "./_lib/supabaseAdmin.js";
 import { creaEmbedding } from "./_lib/gemini.js";
-import { createRequire } from "module";
-const require = createRequire(import.meta.url);
-const pdfParse = require("pdf-parse");
+
+// pdf-parse dipende da @napi-rs/canvas e da API da browser (DOMMatrix, ecc.)
+// non disponibili nell'ambiente serverless di Vercel: crasha sempre.
+// unpdf è una build di pdf.js pensata apposta per ambienti serverless.
 
 function spezzaTesto(testo: string, dimensioneBlocco = 1500): string[] {
   const pulito = testo.replace(/\s+/g, " ").trim();
@@ -41,8 +43,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const buffer = Buffer.from(arrayBuffer);
 
     // 2) Estraiamo il testo
-    const estratto = await pdfParse(buffer);
-    const blocchi = spezzaTesto(estratto.text);
+    const pdf = await getDocumentProxy(new Uint8Array(buffer));
+    const { text } = await extractText(pdf, { mergePages: true });
+    const blocchi = spezzaTesto(text);
 
     if (blocchi.length === 0) {
       return res.status(400).json({ errore: "Non è stato trovato testo leggibile nel PDF" });
