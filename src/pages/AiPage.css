@@ -91,3 +91,27 @@
   text-align: left;
   white-space: pre-wrap; /* rispetta gli "a capo" che scrive Gemini */
 }
+.ai-errore {
+  color: #ffb4b4;
+  font-size: 14px;
+  margin-top: 8px;
+}
+
+.ai-upload-row {
+  display: flex;
+  gap: 16px;
+  margin-top: 16px;
+  flex-wrap: wrap;
+}
+
+.ai-upload-label {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.ai-upload-label input[type="file"] {
+  font-size: 13px;
+}

@@ -1,87 +1,191 @@
 // AiPage.tsx
 // Pagina della sezione "AI" del progetto Gaby React.
-// Per ora è solo la STRUTTURA VISIVA: i pulsanti non fanno ancora nulla,
-// li colleghiamo ai prossimi pezzi (RAG, popup, voce, upload) uno alla volta.
+// Versione aggiornata: risposta nel popup colorato (non più testo semplice),
+// input vocale reale, upload di immagini e PDF per istruire l'AI.
 
-import React, { useState } from "react";
-import "./AiPage.css"; // il file di stile che creiamo subito dopo
-// Aggiungi questo import in cima ad AiPage.tsx, insieme agli altri
+import React, { useState, useRef } from "react";
+import "./AiPage.css";
 import { supabase } from "../lib/supabaseClient";
+import AIPopup, { RispostaAI } from "../components/AIPopup";
 
 const AiPage: React.FC = () => {
-  // Testo che l'utente scrive nella domanda
+  // ---- Zona 1: domanda ----
   const [domanda, setDomanda] = useState<string>("");
+  const [rispostaAI, setRispostaAI] = useState<RispostaAI | null>(null);
+  const [popupAperto, setPopupAperto] = useState<boolean>(false);
+  const [caricamentoRisposta, setCaricamentoRisposta] = useState<boolean>(false);
+  const [erroreDomanda, setErroreDomanda] = useState<string>("");
+  const riconoscimentoRef = useRef<any>(null);
 
-  // Testo che l'utente scrive per aggiungere nuove informazioni
-  const [nuovaInfo, setNuovaInfo] = useState<string>("");
+  const handleChiedi = async (testoDomanda?: string) => {
+    const testo = (testoDomanda ?? domanda).trim();
+    if (!testo) return;
 
-  // Funzione chiamata quando si preme "Chiedi"
-  // (per ora non fa nulla di reale, solo un log per capire che funziona)
-// Aggiungi questi stati insieme agli altri (domanda, nuovaInfo, ecc.)
-const [rispostaAI, setRispostaAI] = useState<string>("");
-const [caricamentoRisposta, setCaricamentoRisposta] = useState<boolean>(false);
+    setCaricamentoRisposta(true);
+    setErroreDomanda("");
 
-// Sostituisce la vecchia handleChiedi (quella con solo console.log)
-const handleChiedi = async () => {
-  if (!domanda.trim()) return;
+    try {
+      const risposta = await fetch("/api/chiedi-ai", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ domanda: testo }),
+      });
 
-  setCaricamentoRisposta(true);
-  setRispostaAI("");
+      const dati = await risposta.json();
 
-  try {
-    // Chiamiamo il nostro endpoint su Vercel (api/chiedi-ai.ts)
-    const risposta = await fetch("/api/chiedi-ai", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ domanda }),
-    });
-
-    const dati = await risposta.json();
-
-    if (dati.errore) {
-      setRispostaAI("Errore: " + dati.errore);
-    } else {
-      setRispostaAI(dati.risposta);
+      if (dati.errore) {
+        setErroreDomanda(dati.errore);
+      } else {
+        setRispostaAI(dati as RispostaAI);
+        setPopupAperto(true);
+      }
+    } catch (errore) {
+      setErroreDomanda("Errore nel contattare l'assistente.");
     }
-  } catch (errore) {
-    setRispostaAI("Errore nel contattare l'assistente.");
-  }
 
-  setCaricamentoRisposta(false);
-};
-
-  // Funzione chiamata quando si preme il pulsante del microfono
-  // (per ora finta, la colleghiamo quando facciamo l'input vocale)
-  const handleMicrofono = () => {
-    console.log("Pulsante microfono premuto (da collegare più avanti)");
+    setCaricamentoRisposta(false);
   };
 
-  // Funzione chiamata quando si preme "Salva" nella zona apprendimento
-  // (per ora non fa nulla di reale, solo un log)
-// Sostituisci la vecchia handleSalvaInfo (quella con solo il console.log) con questa
+  // Input vocale con la Web Speech API (supportata da Chrome/Edge)
+  const handleMicrofono = () => {
+    const SpeechRecognition =
+      (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
 
-// Messaggio da mostrare dopo il salvataggio (successo o errore)
-const [messaggioSalvataggio, setMessaggioSalvataggio] = useState<string>("");
+    if (!SpeechRecognition) {
+      setErroreDomanda("Il riconoscimento vocale non è supportato in questo browser.");
+      return;
+    }
 
-const handleSalvaInfo = async () => {
-  // Non salviamo se la textarea è vuota
-  if (!nuovaInfo.trim()) {
-    setMessaggioSalvataggio("Scrivi qualcosa prima di salvare.");
-    return;
-  }
+    const riconoscimento = new SpeechRecognition();
+    riconoscimento.lang = "it-IT";
+    riconoscimento.interimResults = false;
 
-  // insert manda una nuova riga alla tabella ai_conoscenza
-  const { error } = await supabase
-    .from("ai_conoscenza")
-    .insert({ contenuto: nuovaInfo });
+    riconoscimento.onresult = (evento: any) => {
+      const trascrizione = evento.results[0][0].transcript;
+      setDomanda(trascrizione);
+      handleChiedi(trascrizione);
+    };
 
-  if (error) {
-    setMessaggioSalvataggio("Errore nel salvataggio: " + error.message);
-  } else {
-    setMessaggioSalvataggio("Informazione salvata!");
-    setNuovaInfo(""); // svuota la textarea dopo il salvataggio
-  }
-};
+    riconoscimento.onerror = () => {
+      setErroreDomanda("Errore nel riconoscimento vocale.");
+    };
+
+    riconoscimentoRef.current = riconoscimento;
+    riconoscimento.start();
+  };
+
+  // ---- Zona 3: aggiungi nuove informazioni ----
+  const [nuovaInfo, setNuovaInfo] = useState<string>("");
+  const [messaggioSalvataggio, setMessaggioSalvataggio] = useState<string>("");
+  const [salvandoTesto, setSalvandoTesto] = useState<boolean>(false);
+  const [caricandoImmagine, setCaricandoImmagine] = useState<boolean>(false);
+  const [caricandoPdf, setCaricandoPdf] = useState<boolean>(false);
+
+  const handleSalvaInfo = async () => {
+    if (!nuovaInfo.trim()) {
+      setMessaggioSalvataggio("Scrivi qualcosa prima di salvare.");
+      return;
+    }
+
+    setSalvandoTesto(true);
+    setMessaggioSalvataggio("Salvataggio in corso...");
+
+    try {
+      const risposta = await fetch("/api/salva-info", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ contenuto: nuovaInfo }),
+      });
+      const dati = await risposta.json();
+
+      if (dati.errore) {
+        setMessaggioSalvataggio("Errore nel salvataggio: " + dati.errore);
+      } else {
+        setMessaggioSalvataggio("Informazione salvata!");
+        setNuovaInfo("");
+      }
+    } catch (errore) {
+      setMessaggioSalvataggio("Errore nel contattare il server.");
+    }
+
+    setSalvandoTesto(false);
+  };
+
+  // Carica un'immagine su Supabase Storage, poi chiede a Gemini di descriverla
+  const handleCaricaImmagine = async (file: File | undefined) => {
+    if (!file) return;
+    setCaricandoImmagine(true);
+    setMessaggioSalvataggio("Caricamento immagine...");
+
+    try {
+      const percorso = `immagini/${Date.now()}-${file.name}`;
+      const { error: erroreUpload } = await supabase.storage
+        .from("ai-media")
+        .upload(percorso, file, { contentType: file.type });
+
+      if (erroreUpload) throw erroreUpload;
+
+      const { data: urlPubblico } = supabase.storage.from("ai-media").getPublicUrl(percorso);
+
+      const risposta = await fetch("/api/descrivi-immagine", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          immagineUrl: urlPubblico.publicUrl,
+          nomeFile: file.name,
+        }),
+      });
+      const dati = await risposta.json();
+
+      if (dati.errore) {
+        setMessaggioSalvataggio("Errore: " + dati.errore);
+      } else {
+        setMessaggioSalvataggio("Immagine aggiunta alla conoscenza dell'AI!");
+      }
+    } catch (errore: any) {
+      setMessaggioSalvataggio("Errore nel caricamento immagine: " + errore.message);
+    }
+
+    setCaricandoImmagine(false);
+  };
+
+  // Carica un PDF su Supabase Storage, poi ne estrae ed indicizza il testo
+  const handleCaricaPdf = async (file: File | undefined) => {
+    if (!file) return;
+    setCaricandoPdf(true);
+    setMessaggioSalvataggio("Caricamento PDF...");
+
+    try {
+      const percorso = `pdf/${Date.now()}-${file.name}`;
+      const { error: erroreUpload } = await supabase.storage
+        .from("ai-media")
+        .upload(percorso, file, { contentType: "application/pdf" });
+
+      if (erroreUpload) throw erroreUpload;
+
+      const { data: urlPubblico } = supabase.storage.from("ai-media").getPublicUrl(percorso);
+
+      const risposta = await fetch("/api/leggi-pdf", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          pdfUrl: urlPubblico.publicUrl,
+          nomeFile: file.name,
+        }),
+      });
+      const dati = await risposta.json();
+
+      if (dati.errore) {
+        setMessaggioSalvataggio("Errore: " + dati.errore);
+      } else {
+        setMessaggioSalvataggio(`PDF elaborato: ${dati.blocchiSalvati} blocchi aggiunti alla conoscenza dell'AI!`);
+      }
+    } catch (errore: any) {
+      setMessaggioSalvataggio("Errore nel caricamento PDF: " + errore.message);
+    }
+
+    setCaricandoPdf(false);
+  };
 
   return (
     <div className="ai-page">
@@ -97,38 +201,25 @@ const handleSalvaInfo = async () => {
             placeholder="Scrivi qui la tua domanda..."
             value={domanda}
             onChange={(e) => setDomanda(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && handleChiedi()}
           />
-          {/* Pulsante microfono: icona finta per ora, la sostituiamo dopo */}
-          <button
-            className="ai-mic-button"
-            onClick={handleMicrofono}
-            title="Fai la domanda a voce"
-          >
+          <button className="ai-mic-button" onClick={handleMicrofono} title="Fai la domanda a voce">
             🎤
           </button>
-          <button className="ai-ask-button" onClick={handleChiedi}>
-            Chiedi
+          <button className="ai-ask-button" onClick={() => handleChiedi()} disabled={caricamentoRisposta}>
+            {caricamentoRisposta ? "..." : "Chiedi"}
           </button>
         </div>
+        {erroreDomanda && <p className="ai-errore">{erroreDomanda}</p>}
       </section>
 
-      {/* ZONA 2: qui apparirà il popup colorato con la risposta */}
-      <section className="ai-section ai-answer-section">
-        <h2>Risposta</h2>
-        <div className="ai-answer-placeholder">
-          {caricamentoRisposta && <p className="ai-placeholder-text">Sto pensando...</p>}
-          {!caricamentoRisposta && !rispostaAI && (
-            <p className="ai-placeholder-text">Le risposte appariranno qui.</p>
-          )}
-          {!caricamentoRisposta && rispostaAI && (
-            <p className="ai-answer-text">{rispostaAI}</p>
-          )}
-        </div>
-      </section>
+      {/* ZONA 2: il popup con la risposta si apre sopra tutta la pagina */}
+      <AIPopup dati={popupAperto ? rispostaAI : null} onChiudi={() => setPopupAperto(false)} />
 
       {/* ZONA 3: carica nuove informazioni */}
       <section className="ai-section ai-learn-section">
         <h2>Aggiungi nuove informazioni</h2>
+
         <textarea
           className="ai-learn-textarea"
           placeholder="Scrivi qui informazioni sulla nazionale italiana da insegnare all'AI..."
@@ -136,9 +227,32 @@ const handleSalvaInfo = async () => {
           onChange={(e) => setNuovaInfo(e.target.value)}
           rows={6}
         />
-        <button className="ai-save-button" onClick={handleSalvaInfo}>
-          Salva
+        <button className="ai-save-button" onClick={handleSalvaInfo} disabled={salvandoTesto}>
+          {salvandoTesto ? "Salvataggio..." : "Salva"}
         </button>
+
+        <div className="ai-upload-row">
+          <label className="ai-upload-label">
+            Carica immagine
+            <input
+              type="file"
+              accept="image/*"
+              disabled={caricandoImmagine}
+              onChange={(e) => handleCaricaImmagine(e.target.files?.[0])}
+            />
+          </label>
+
+          <label className="ai-upload-label">
+            Carica PDF
+            <input
+              type="file"
+              accept="application/pdf"
+              disabled={caricandoPdf}
+              onChange={(e) => handleCaricaPdf(e.target.files?.[0])}
+            />
+          </label>
+        </div>
+
         {messaggioSalvataggio && <p className="ai-save-message">{messaggioSalvataggio}</p>}
       </section>
     </div>
