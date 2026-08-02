@@ -3,6 +3,26 @@
 // I file che iniziano con "_" NON diventano endpoint pubblici su Vercel:
 // sono solo codice condiviso importato dagli altri file in /api.
 
+// Riprova automaticamente le chiamate a Gemini quando il modello è
+// temporaneamente sovraccarico (503) o si superano i limiti di frequenza (429),
+// invece di mostrare subito un errore all'utente.
+async function fetchGeminiConRiprovi(url: string, opzioni: RequestInit, tentativi = 3): Promise<any> {
+  for (let tentativo = 1; tentativo <= tentativi; tentativo++) {
+    const risposta = await fetch(url, opzioni);
+    const dati = await risposta.json();
+
+    const codiceErrore = dati?.error?.code;
+    const puoRiprovare = codiceErrore === 503 || codiceErrore === 429;
+
+    if (!puoRiprovare || tentativo === tentativi) {
+      return dati;
+    }
+
+    const attesaMs = 1000 * tentativo; // 1s, 2s, 3s...
+    await new Promise((resolve) => setTimeout(resolve, attesaMs));
+  }
+}
+
 const CHIAVE_GEMINI = process.env.GEMINI_API_KEY as string;
 const MODELLO_TESTO = "gemini-flash-latest"; // stesso modello che usavi già
 // text-embedding-004 è stato dismesso da Google: il modello attuale è gemini-embedding-001.
@@ -22,7 +42,7 @@ export async function creaEmbedding(
   testo: string,
   taskType: "RETRIEVAL_DOCUMENT" | "RETRIEVAL_QUERY" = "RETRIEVAL_DOCUMENT"
 ): Promise<number[]> {
-  const risposta = await fetch(
+  const dati = await fetchGeminiConRiprovi(
     `https://generativelanguage.googleapis.com/v1beta/models/${MODELLO_EMBEDDING}:embedContent?key=${CHIAVE_GEMINI}`,
     {
       method: "POST",
@@ -33,8 +53,6 @@ export async function creaEmbedding(
       }),
     }
   );
-
-  const dati = await risposta.json();
 
   if (!dati?.embedding?.values) {
     throw new Error("Gemini non ha restituito un embedding valido: " + JSON.stringify(dati));
@@ -70,7 +88,7 @@ const SCHEMA_RISPOSTA = {
  * pronta per essere mostrata nel popup colorato.
  */
 export async function generaRispostaStrutturata(prompt: string) {
-  const risposta = await fetch(
+  const dati = await fetchGeminiConRiprovi(
     `https://generativelanguage.googleapis.com/v1beta/models/${MODELLO_TESTO}:generateContent?key=${CHIAVE_GEMINI}`,
     {
       method: "POST",
@@ -85,7 +103,6 @@ export async function generaRispostaStrutturata(prompt: string) {
     }
   );
 
-  const dati = await risposta.json();
   const testoJson = dati?.candidates?.[0]?.content?.parts?.[0]?.text;
 
   if (!testoJson) {
@@ -105,7 +122,7 @@ export async function generaRispostaStrutturata(prompt: string) {
  * indicizzato/embeddato come "contenuto" della riga in ai_conoscenza.
  */
 export async function descriviImmagine(base64: string, mimeType: string, didascalia?: string) {
-  const risposta = await fetch(
+  const dati = await fetchGeminiConRiprovi(
     `https://generativelanguage.googleapis.com/v1beta/models/${MODELLO_TESTO}:generateContent?key=${CHIAVE_GEMINI}`,
     {
       method: "POST",
@@ -127,7 +144,6 @@ export async function descriviImmagine(base64: string, mimeType: string, didasca
     }
   );
 
-  const dati = await risposta.json();
   const descrizione = dati?.candidates?.[0]?.content?.parts?.[0]?.text;
 
   if (!descrizione) {
