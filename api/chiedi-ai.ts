@@ -41,6 +41,22 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     const pezzi = risultati || [];
+
+    // LOG TEMPORANEO DI DEBUG: guarda i Runtime Logs su Vercel dopo aver
+    // fatto una domanda, per vedere cosa ha davvero trovato la ricerca RAG.
+    // Rimuovi questo blocco quando hai finito di verificare.
+    console.log(
+      "DEBUG match_ai_conoscenza:",
+      JSON.stringify(
+        pezzi.map((p: any) => ({
+          tipo: p.tipo,
+          similarity: p.similarity,
+          haImmagine: !!p.immagine_url,
+          anteprima: (p.contenuto || "").slice(0, 60),
+        }))
+      )
+    );
+
     const contestoTestuale = pezzi.map((p: any, i: number) => `[${i + 1}] ${p.contenuto}`).join("\n---\n");
 
     // Se tra i risultati c'è un'immagine pertinente, la mostriamo nel popup

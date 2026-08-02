@@ -7,6 +7,7 @@ import React, { useState, useRef } from "react";
 import "./AiPage.css";
 import { supabase } from "../lib/supabaseClient";
 import AIPopup, { RispostaAI } from "../components/AIPopup";
+import AICaricamento from "../components/AICaricamento";
 
 const AiPage: React.FC = () => {
   // ---- Zona 1: domanda ----
@@ -213,7 +214,9 @@ const AiPage: React.FC = () => {
         {erroreDomanda && <p className="ai-errore">{erroreDomanda}</p>}
       </section>
 
-      {/* ZONA 2: il popup con la risposta si apre sopra tutta la pagina */}
+      {/* ZONA 2: mentre l'AI elabora mostriamo i puntini animati;
+          appena arriva la risposta si apre il popup colorato */}
+      {caricamentoRisposta && <AICaricamento />}
       <AIPopup dati={popupAperto ? rispostaAI : null} onChiudi={() => setPopupAperto(false)} />
 
       {/* ZONA 3: carica nuove informazioni */}
