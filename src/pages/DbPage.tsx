@@ -37,9 +37,6 @@ export default function DbPage() {
   const columnNamesRef = useRef<string[]>([]);
 
   // Tutti i clienti caricati, nello stesso ordine mostrato nella griglia.
-  // Con la paginazione nativa, l'indice di riga che riceviamo dagli eventi
-  // di Handsontable corrisponde direttamente a un indice di questo array
-  // (dopo la conversione visual→fisico spiegata sotto).
   const tuttiIClientiRef = useRef<Record<string, any>[]>([]);
 
   const [error, setError] = useState<string | null>(null);
@@ -68,120 +65,124 @@ export default function DbPage() {
     );
   }
 
-  useEffect(() => {
-    async function loadData() {
-      try {
-        const response = await fetch('/api/clienti');
+  // Carica (o ricarica) tutti i dati da Supabase e (ri)crea la griglia.
+  // Richiamabile sia al primo caricamento che dal pulsante di refresh.
+  async function loadData() {
+    try {
+      const response = await fetch('/api/clienti');
 
-        if (!response.ok) {
-          const testoGrezzo = await response.text();
-          let dettaglio = testoGrezzo;
-          try {
-            dettaglio = JSON.parse(testoGrezzo).error || testoGrezzo;
-          } catch {
-            // dettaglio resta il testo grezzo
-          }
-          throw new Error(
-            `Errore nel caricamento dei dati (status ${response.status}): ${dettaglio}`
-          );
+      if (!response.ok) {
+        const testoGrezzo = await response.text();
+        let dettaglio = testoGrezzo;
+        try {
+          dettaglio = JSON.parse(testoGrezzo).error || testoGrezzo;
+        } catch {
+          // dettaglio resta il testo grezzo
         }
-
-        const clienti = await response.json();
-        if (!clienti || clienti.length === 0) {
-          setError('Nessun dato trovato nella tabella Clienti');
-          return;
-        }
-
-        columnNamesRef.current = Object.keys(clienti[0]);
-        tuttiIClientiRef.current = clienti;
-
-        if (gridRef.current) {
-          instanceRef.current = new Handsontable(gridRef.current, {
-            licenseKey: 'non-commercial-and-evaluation',
-            themeName: 'ht-theme-main',
-
-            data: costruisciTutteLeRighe(),
-            colHeaders: columnNamesRef.current,
-            columns: costruisciColonne(),
-
-            fixedColumnsStart: 3,
-            filters: true,
-            dropdownMenu: true,
-            wordWrap: false,
-            manualColumnResize: true,
-            columnSorting: true,
-
-            width: '100%',
-            height: 'auto',
-            stretchH: 'all',
-            rowHeaders: true,
-            className: 'righe-alternate',
-
-            // Paginazione nativa: 15 righe per pagina, senza selettore
-            // di dimensione pagina (lo teniamo fisso) ma con contatore
-            // e frecce di navigazione
-            pagination: {
-              pageSize: 15,
-              showPageSize: false,
-              showCounter: true,
-              showNavigation: true,
-            },
-
-            afterChange: async (changes, source) => {
-              if (source === 'loadData' || !changes) return;
-              const istanza = instanceRef.current;
-              if (!istanza) return;
-
-              for (const change of changes as unknown[][]) {
-                const rigaVisibile = change[0] as number;
-                const indiceColonna = Number(change[1]);
-                const vecchioValore = change[2];
-                const nuovoValore = change[3];
-
-                if (vecchioValore === nuovoValore) continue;
-
-                // change[1] arriva come indice numerico di colonna (0, 1, 2...),
-                // non come nome: lo traduciamo usando l'ordine con cui
-                // abbiamo caricato le colonne da Supabase
-                const columnName = columnNamesRef.current[indiceColonna];
-                if (!columnName || colonneSolaLettura.includes(columnName)) continue;
-
-                const indiceReale = istanza.toPhysicalRow(Number(rigaVisibile));
-                const cliente = tuttiIClientiRef.current[indiceReale];
-                if (!cliente) continue;
-
-                let valoreDaSalvare: any = nuovoValore;
-                if (columnName === 'data_privacy') {
-                  valoreDaSalvare = formatDataPerSalvataggio(String(nuovoValore ?? ''));
-                }
-                cliente[columnName] = valoreDaSalvare;
-
-                setSaving(true);
-                try {
-                  const res = await fetch('/api/clienti-update', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                      id: cliente.id,
-                      colonna: columnName,
-                      valore: valoreDaSalvare,
-                    }),
-                  });
-                  if (!res.ok) setError('Errore nel salvataggio di una modifica');
-                } catch {
-                  setError('Errore di rete durante il salvataggio');
-                } finally {
-                  setSaving(false);
-                }
-              }
-            },
-          });
-        }
-      } catch (err: any) {
-        setError(err.message);
+        throw new Error(
+          `Errore nel caricamento dei dati (status ${response.status}): ${dettaglio}`
+        );
       }
-    }
 
+      const clienti = await response.json();
+      if (!clienti || clienti.length === 0) {
+        setError('Nessun dato trovato nella tabella Clienti');
+        return;
+      }
+
+      setError(null);
+      columnNamesRef.current = Object.keys(clienti[0]);
+      tuttiIClientiRef.current = clienti;
+
+      if (gridRef.current) {
+        instanceRef.current = new Handsontable(gridRef.current, {
+          licenseKey: 'non-commercial-and-evaluation',
+          themeName: 'ht-theme-main',
+
+          data: costruisciTutteLeRighe(),
+          colHeaders: columnNamesRef.current,
+          columns: costruisciColonne(),
+
+          fixedColumnsStart: 3,
+          filters: true,
+          dropdownMenu: true,
+          wordWrap: false,
+          manualColumnResize: true,
+          columnSorting: true,
+          outsideClickDeselects: false,
+          width: '100%',
+          height: 'auto',
+          stretchH: 'all',
+          rowHeaders: true,
+          className: 'righe-alternate',
+
+          // Paginazione nativa: 15 righe per pagina
+          pagination: {
+            pageSize: 15,
+            showPageSize: false,
+            showCounter: true,
+            showNavigation: true,
+          },
+
+          afterChange: async (changes, source) => {
+            if (source === 'loadData' || !changes) return;
+            const istanza = instanceRef.current;
+            if (!istanza) return;
+
+            for (const change of changes as unknown[][]) {
+              const rigaVisibile = change[0] as number;
+              const indiceColonna = Number(change[1]);
+              const vecchioValore = change[2];
+              const nuovoValore = change[3];
+
+              if (vecchioValore === nuovoValore) continue;
+
+              // L'indice di colonna arriva come numero (0, 1, 2...), non
+              // come nome: lo traduciamo usando l'ordine con cui abbiamo
+              // caricato le colonne da Supabase
+              const columnName = columnNamesRef.current[indiceColonna];
+              if (!columnName || colonneSolaLettura.includes(columnName)) continue;
+
+              // Con paginazione/filtri/ordinamento attivi, l'indice di riga
+              // "visibile" non coincide sempre con l'indice reale
+              // nell'array dati: convertiamo sempre con toPhysicalRow
+              const indiceReale = istanza.toPhysicalRow(Number(rigaVisibile));
+              const cliente = tuttiIClientiRef.current[indiceReale];
+              if (!cliente) continue;
+
+              let valoreDaSalvare: any = nuovoValore;
+              if (columnName === 'data_privacy') {
+                valoreDaSalvare = formatDataPerSalvataggio(String(nuovoValore ?? ''));
+              }
+              cliente[columnName] = valoreDaSalvare;
+
+              setSaving(true);
+              try {
+                const res = await fetch('/api/clienti-update', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({
+                    id: cliente.id,
+                    colonna: columnName,
+                    valore: valoreDaSalvare,
+                  }),
+                });
+                if (!res.ok) setError('Errore nel salvataggio di una modifica');
+              } catch {
+                setError('Errore di rete durante il salvataggio');
+              } finally {
+                setSaving(false);
+              }
+            }
+          },
+        });
+      }
+    } catch (err: any) {
+      setError(err.message);
+    }
+  }
+
+  useEffect(() => {
     loadData();
 
     return () => {
@@ -192,8 +193,16 @@ export default function DbPage() {
     };
   }, []);
 
-  // Crea un nuovo cliente vuoto e aggiorna la griglia (il plugin di
-  // paginazione si aggiorna da solo, come indicato nella documentazione)
+  // Ricarica tutto da zero (usata dal pulsante di refresh)
+  function aggiornaDati() {
+    if (instanceRef.current) {
+      instanceRef.current.destroy();
+      instanceRef.current = null;
+    }
+    loadData();
+  }
+
+  // Crea un nuovo cliente vuoto e aggiorna la griglia
   async function creaNuovoCliente() {
     setSaving(true);
     try {
@@ -207,8 +216,6 @@ export default function DbPage() {
 
       if (instanceRef.current) {
         instanceRef.current.loadData(costruisciTutteLeRighe());
-        // Andiamo automaticamente all'ultima pagina, dove si trova
-        // il nuovo cliente appena creato
         const pagination = instanceRef.current.getPlugin('pagination');
         pagination.lastPage();
       }
@@ -316,6 +323,13 @@ export default function DbPage() {
           className="flex items-center justify-center w-8 h-8 rounded border border-gray-300 text-blue-600 hover:bg-blue-50"
         >
           <i className="fa-solid fa-file-export"></i>
+        </button>
+        <button
+          onClick={aggiornaDati}
+          title="Aggiorna dati"
+          className="flex items-center justify-center w-8 h-8 rounded border border-gray-300 text-gray-600 hover:bg-gray-100"
+        >
+          <i className="fa-solid fa-rotate-right"></i>
         </button>
       </div>
 
