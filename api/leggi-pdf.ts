@@ -5,9 +5,11 @@
 // e per non superare i limiti di lunghezza) e salviamo una riga per blocco.
 
 import type { VercelRequest, VercelResponse } from "@vercel/node";
-import pdfParse from "pdf-parse";
 import { supabaseServer } from "./_lib/supabaseAdmin.js";
 import { creaEmbedding } from "./_lib/gemini.js";
+import { createRequire } from "module";
+const require = createRequire(import.meta.url);
+const pdfParse = require("pdf-parse");
 
 function spezzaTesto(testo: string, dimensioneBlocco = 1500): string[] {
   const pulito = testo.replace(/\s+/g, " ").trim();
