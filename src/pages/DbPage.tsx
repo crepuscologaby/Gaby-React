@@ -128,23 +128,24 @@ export default function DbPage() {
               const istanza = instanceRef.current;
               if (!istanza) return;
 
-              for (const change of changes) {
-                const [rigaVisibile, nomeColonna, vecchioValore, nuovoValore] = change;
+              for (const change of changes as unknown[][]) {
+                const rigaVisibile = change[0] as number;
+                const nomeColonna = change[1] as string | number;
+                const vecchioValore = change[2];
+                const nuovoValore = change[3];
+
                 if (vecchioValore === nuovoValore) continue;
 
                 const columnName = String(nomeColonna);
                 if (colonneSolaLettura.includes(columnName)) continue;
 
-                // Con paginazione/filtri attivi, l'indice di riga "visibile"
-                // non coincide sempre con l'indice reale nell'array dati:
-                // convertiamo sempre con toPhysicalRow
                 const indiceReale = istanza.toPhysicalRow(Number(rigaVisibile));
                 const cliente = tuttiIClientiRef.current[indiceReale];
                 if (!cliente) continue;
 
-                let valoreDaSalvare = nuovoValore;
+                let valoreDaSalvare: any = nuovoValore;
                 if (columnName === 'data_privacy') {
-                  valoreDaSalvare = formatDataPerSalvataggio(nuovoValore);
+                  valoreDaSalvare = formatDataPerSalvataggio(String(nuovoValore ?? ''));
                 }
                 cliente[columnName] = valoreDaSalvare;
 
