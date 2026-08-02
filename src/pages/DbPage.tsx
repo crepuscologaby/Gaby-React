@@ -1,14 +1,18 @@
 // DbPage.tsx
 // Pagina che mostra ed edita in tempo reale i dati della tabella "Clienti"
-// (PostgreSQL su Supabase) usando Jspreadsheet CE.
+// (PostgreSQL su Supabase) usando Handsontable, con paginazione nativa.
+//
+// NOTA LICENZA: Handsontable è gratuito solo per uso personale/non
+// commerciale (chiave 'non-commercial-and-evaluation' qui sotto). Se in
+// futuro questo progetto diventa commerciale, serve una licenza a pagamento
+// da handsontable.com/pricing.
 
 import { useEffect, useRef, useState } from 'react';
-import jspreadsheet from 'jspreadsheet-ce';
-import 'jspreadsheet-ce/dist/jspreadsheet.css'; // stile grafico dello spreadsheet
-import 'jsuites/dist/jsuites.css'; // dipendenza grafica richiesta da jspreadsheet
+import Handsontable from 'handsontable';
+import 'handsontable/styles/handsontable.css'; // stili strutturali di base
+import 'handsontable/styles/ht-theme-main.css'; // tema grafico (colori, font, ecc.)
 
-// Converte una data ISO (es. "2026-08-01T10:23:00+00:00") in un formato
-// leggibile "YYYY-MM-DD HH:mm" da mostrare nello spreadsheet.
+// Converte una data ISO in un formato leggibile "YYYY-MM-DD HH:mm"
 function formatDataLeggibile(isoString: string | null): string {
   if (!isoString) return '';
   const d = new Date(isoString);
@@ -16,56 +20,67 @@ function formatDataLeggibile(isoString: string | null): string {
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
 
-// Fa l'operazione inversa: da "YYYY-MM-DD HH:mm" (testo inserito dall'utente
-// nello spreadsheet) a formato ISO, da salvare su Supabase.
+// Da "YYYY-MM-DD HH:mm" a formato ISO, per salvare su Supabase
 function formatDataPerSalvataggio(dataLeggibile: string): string | null {
   if (!dataLeggibile) return null;
   const d = new Date(dataLeggibile.replace(' ', 'T'));
-  if (isNaN(d.getTime())) return null; // data non valida
+  if (isNaN(d.getTime())) return null;
   return d.toISOString();
 }
 
+// Colonne che non devono mai essere modificate dall'utente
+const colonneSolaLettura = ['id', 'client_id', 'created_at'];
+
 export default function DbPage() {
-  // Riferimento al div HTML dove Jspreadsheet verrà "montato"
-  const spreadsheetRef = useRef<HTMLDivElement>(null);
-
-  // Riferimento all'istanza dello spreadsheet (serve per distruggerla al cleanup)
-  const instanceRef = useRef<any>(null);
-
-  // Nomi delle colonne, nell'ordine in cui arrivano da Supabase.
-  // Ci serve per sapere, quando una cella viene modificata, a quale
-  // colonna del database corrisponde.
+  const gridRef = useRef<HTMLDivElement>(null);
+  const instanceRef = useRef<Handsontable | null>(null);
   const columnNamesRef = useRef<string[]>([]);
 
-  // Id di ogni riga (colonna "id" della tabella Clienti), nello stesso
-  // ordine in cui le righe vengono mostrate nello spreadsheet.
-  const rowIdsRef = useRef<any[]>([]);
+  // Tutti i clienti caricati, nello stesso ordine mostrato nella griglia.
+  // Con la paginazione nativa, l'indice di riga che riceviamo dagli eventi
+  // di Handsontable corrisponde direttamente a un indice di questo array
+  // (dopo la conversione visual→fisico spiegata sotto).
+  const tuttiIClientiRef = useRef<Record<string, any>[]>([]);
 
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
-  useEffect(() => {
-    // Colonne che non devono mai essere modificate dall'utente
-    // (chiavi generate automaticamente o gestite dal sistema)
-    const colonneSolaLettura = ['id', 'client_id', 'created_at'];
+  function costruisciColonne() {
+    return columnNamesRef.current.map((key) => {
+      if (key === 'enable') {
+        return { type: 'checkbox' as const };
+      }
+      return {
+        type: 'text' as const,
+        readOnly: colonneSolaLettura.includes(key),
+      };
+    });
+  }
 
+  function costruisciTutteLeRighe() {
+    return tuttiIClientiRef.current.map((cliente) =>
+      columnNamesRef.current.map((key) => {
+        if (key === 'created_at' || key === 'data_privacy') {
+          return formatDataLeggibile(cliente[key]);
+        }
+        return cliente[key];
+      })
+    );
+  }
+
+  useEffect(() => {
     async function loadData() {
       try {
         const response = await fetch('/api/clienti');
-        if (!response.ok) {
-          // Leggiamo SEMPRE come testo grezzo prima (una Response si può
-          // leggere una sola volta), poi proviamo a interpretarlo come JSON
-          const testoGrezzo = await response.text();
 
+        if (!response.ok) {
+          const testoGrezzo = await response.text();
           let dettaglio = testoGrezzo;
           try {
-            const bodyErrore = JSON.parse(testoGrezzo);
-            dettaglio = bodyErrore.error || testoGrezzo;
+            dettaglio = JSON.parse(testoGrezzo).error || testoGrezzo;
           } catch {
-            // Non era JSON valido: usiamo il testo grezzo così com'è
-            // (dettaglio è già stato impostato sopra)
+            // dettaglio resta il testo grezzo
           }
-
           throw new Error(
             `Errore nel caricamento dei dati (status ${response.status}): ${dettaglio}`
           );
@@ -77,124 +92,61 @@ export default function DbPage() {
           return;
         }
 
-        // Salviamo i nomi delle colonne (es. ['id', 'nome', 'cognome', ...])
         columnNamesRef.current = Object.keys(clienti[0]);
+        tuttiIClientiRef.current = clienti;
 
-        // Salviamo gli id di ogni riga, nello stesso ordine dei dati
-        rowIdsRef.current = clienti.map((c: Record<string, any>) => c.id);
+        if (gridRef.current) {
+          instanceRef.current = new Handsontable(gridRef.current, {
+            licenseKey: 'non-commercial-and-evaluation',
+            themeName: 'ht-theme-main',
 
-        // Definiamo il tipo di colonna giusto per ogni campo della tabella
-        const columns = columnNamesRef.current.map((key) => {
-          // Colonna "enable": è un booleano, mostrata come checkbox
-          if (key === 'enable') {
-            return {
-              type: 'checkbox' as const,
-              title: key,
-              width: 100,
-              filter: true,
-            };
-          }
+            data: costruisciTutteLeRighe(),
+            colHeaders: columnNamesRef.current,
+            columns: costruisciColonne(),
 
-          // Colonna "data_privacy": data/ora, editabile con calendario
-          if (key === 'data_privacy') {
-            return {
-              type: 'calendar' as const,
-              title: key,
-              width: 180,
-              options: { format: 'YYYY-MM-DD HH:mm' },
-              filter: true,
-            };
-          }
+            fixedColumnsStart: 3,
+            filters: true,
+            dropdownMenu: true,
+            width: '100%',
+            height: 'auto',
+            stretchH: 'all',
+            rowHeaders: true,
+            className: 'righe-alternate',
 
-          // Tutte le altre colonne: testo semplice
-          return {
-            type: 'text' as const,
-            title: key,
-            width: 150,
-            readOnly: colonneSolaLettura.includes(key),
-            filter: true,
-          };
-        });
+            // Paginazione nativa: 15 righe per pagina, senza selettore
+            // di dimensione pagina (lo teniamo fisso) ma con contatore
+            // e frecce di navigazione
+            pagination: {
+              pageSize: 15,
+              showPageSize: false,
+              showCounter: true,
+              showNavigation: true,
+            },
 
-        // Costruiamo le righe convertendo le date in formato leggibile
-        const rows = clienti.map((cliente: Record<string, any>) =>
-          columnNamesRef.current.map((key) => {
-            if (key === 'created_at' || key === 'data_privacy') {
-              return formatDataLeggibile(cliente[key]);
-            }
-            return cliente[key];
-          })
-        );
+            afterChange: async (changes, source) => {
+              if (source === 'loadData' || !changes) return;
+              const istanza = instanceRef.current;
+              if (!istanza) return;
 
-        // Se esiste già un'istanza di spreadsheet, la distruggiamo
-        // prima di crearne una nuova (evita duplicati al re-render)
-        // Il destroy va gestito in modo sicuro: a seconda della versione/
-        // configurazione, jspreadsheet può restituire un singolo oggetto
-        // con .destroy(), oppure un array di istanze (una per worksheet).
-        if (instanceRef.current) {
-          if (typeof instanceRef.current.destroy === 'function') {
-            instanceRef.current.destroy();
-          } else if (Array.isArray(instanceRef.current)) {
-            instanceRef.current.forEach((istanza: any) => {
-              if (istanza && typeof istanza.destroy === 'function') {
-                istanza.destroy();
-              }
-            });
-          }
-        }
+              for (const change of changes) {
+                const [rigaVisibile, nomeColonna, vecchioValore, nuovoValore] = change;
+                if (vecchioValore === nuovoValore) continue;
 
-        if (spreadsheetRef.current) {
-          instanceRef.current = jspreadsheet(spreadsheetRef.current, {
-            tableOverflow: false,
+                const columnName = String(nomeColonna);
+                if (colonneSolaLettura.includes(columnName)) continue;
 
-            // Nella versione attuale di jspreadsheet-ce, i dati e le colonne
-            // vanno dichiarati dentro l'array "worksheets". Noi ne usiamo uno solo.
-            worksheets: [
-              {
-                data: rows,
-                columns: columns,
+                // Con paginazione/filtri attivi, l'indice di riga "visibile"
+                // non coincide sempre con l'indice reale nell'array dati:
+                // convertiamo sempre con toPhysicalRow
+                const indiceReale = istanza.toPhysicalRow(Number(rigaVisibile));
+                const cliente = tuttiIClientiRef.current[indiceReale];
+                if (!cliente) continue;
 
-                // Blocca le prime 3 colonne (id, client_id, created_at)
-                // così restano visibili anche scorrendo verso destra
-                freezeColumns: 3,
-                // Attiva il pannello dei filtri per questo foglio
-                filters: true,              
-                // Mostra 15 righe per pagina, con un menu a tendina per
-                pagination: 15,
-                paginationOptions: [10, 15, 20, 50, 100],
-              },
-            ],
-
-
-
-            // A questo livello (fuori da worksheets) jspreadsheet-ce chiama
-            // questa funzione ogni volta che l'utente modifica una o più
-            // celle e conferma (es. con Invio o cliccando fuori dalla cella).
-            // Chiamata da Jspreadsheet ogni volta che l'utente modifica
-            // una o più celle e conferma (es. con Invio o cliccando fuori).
-            // Firma reale: (instance, records) — records è un array di
-            // oggetti {x, y, value, ...}
-            onafterchanges: async (_instance: any, records: any[]) => {
-              for (const record of records) {
-                // record.x e record.y arrivano come stringhe (es. "0", "3"),
-                // le convertiamo in numeri per usarle come indici degli array
-                const indiceRiga = Number(record.y);
-                const indiceColonna = Number(record.x);
-
-                const rowId = rowIdsRef.current[indiceRiga];
-                const columnName = columnNamesRef.current[indiceColonna];
-
-                // Non salviamo le colonne di sola lettura o se qualcosa
-                // non torna con gli indici
-                if (!columnName || colonneSolaLettura.includes(columnName)) continue;
-
-                let nuovoValore = record.value;
-
-                // Se la colonna è data_privacy, riconvertiamo il testo
-                // leggibile in formato ISO prima di inviarlo al database
+                let valoreDaSalvare = nuovoValore;
                 if (columnName === 'data_privacy') {
-                  nuovoValore = formatDataPerSalvataggio(nuovoValore);
+                  valoreDaSalvare = formatDataPerSalvataggio(nuovoValore);
                 }
+                cliente[columnName] = valoreDaSalvare;
 
                 setSaving(true);
                 try {
@@ -202,14 +154,12 @@ export default function DbPage() {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
-                      id: rowId,
+                      id: cliente.id,
                       colonna: columnName,
-                      valore: nuovoValore,
+                      valore: valoreDaSalvare,
                     }),
                   });
-                  if (!res.ok) {
-                    setError('Errore nel salvataggio di una modifica');
-                  }
+                  if (!res.ok) setError('Errore nel salvataggio di una modifica');
                 } catch {
                   setError('Errore di rete durante il salvataggio');
                 } finally {
@@ -217,8 +167,7 @@ export default function DbPage() {
                 }
               }
             },
-
-          } as any); // "as any" bypassa i tipi TS non ancora perfettamente allineati alla libreria
+          });
         }
       } catch (err: any) {
         setError(err.message);
@@ -227,43 +176,159 @@ export default function DbPage() {
 
     loadData();
 
-    // Cleanup: quando il componente viene smontato, distruggiamo lo spreadsheet
     return () => {
-        // Il destroy va gestito in modo sicuro: a seconda della versione/
-        // configurazione, jspreadsheet può restituire un singolo oggetto
-        // con .destroy(), oppure un array di istanze (una per worksheet).
-        if (instanceRef.current) {
-          if (typeof instanceRef.current.destroy === 'function') {
-            instanceRef.current.destroy();
-          } else if (Array.isArray(instanceRef.current)) {
-            instanceRef.current.forEach((istanza: any) => {
-              if (istanza && typeof istanza.destroy === 'function') {
-                istanza.destroy();
-              }
-            });
-          }
-        }
+      if (instanceRef.current) {
+        instanceRef.current.destroy();
+        instanceRef.current = null;
+      }
     };
-  }, []); // [] = eseguito una sola volta al caricamento della pagina
+  }, []);
+
+  // Crea un nuovo cliente vuoto e aggiorna la griglia (il plugin di
+  // paginazione si aggiorna da solo, come indicato nella documentazione)
+  async function creaNuovoCliente() {
+    setSaving(true);
+    try {
+      const res = await fetch('/api/clienti-create', { method: 'POST' });
+      if (!res.ok) {
+        setError('Errore nella creazione del nuovo cliente');
+        return;
+      }
+      const nuovoCliente = await res.json();
+      tuttiIClientiRef.current.push(nuovoCliente);
+
+      if (instanceRef.current) {
+        instanceRef.current.loadData(costruisciTutteLeRighe());
+        // Andiamo automaticamente all'ultima pagina, dove si trova
+        // il nuovo cliente appena creato
+        const pagination = instanceRef.current.getPlugin('pagination');
+        pagination.lastPage();
+      }
+    } catch {
+      setError('Errore di rete durante la creazione');
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  // Elimina il cliente della riga attualmente selezionata
+  async function eliminaClienteSelezionato() {
+    const istanza = instanceRef.current;
+    if (!istanza) return;
+
+    const selezione = istanza.getSelectedLast();
+    if (!selezione) {
+      setError('Seleziona prima una riga da eliminare');
+      return;
+    }
+
+    const indiceReale = istanza.toPhysicalRow(selezione[0]);
+    const cliente = tuttiIClientiRef.current[indiceReale];
+    if (!cliente) return;
+
+    const conferma = window.confirm(
+      `Eliminare il cliente "${cliente.cognome || ''} ${cliente.nome || ''}" (id ${cliente.id})?`
+    );
+    if (!conferma) return;
+
+    setSaving(true);
+    try {
+      const res = await fetch('/api/clienti-delete', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: cliente.id }),
+      });
+      if (!res.ok) {
+        setError("Errore nell'eliminazione del cliente");
+        return;
+      }
+
+      tuttiIClientiRef.current.splice(indiceReale, 1);
+      istanza.loadData(costruisciTutteLeRighe());
+    } catch {
+      setError("Errore di rete durante l'eliminazione");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  // Esporta TUTTI i clienti in formato CSV, apribile direttamente con Excel
+  function esportaCSV() {
+    const intestazioni = columnNamesRef.current.join(';');
+
+    const righe = tuttiIClientiRef.current.map((cliente) =>
+      columnNamesRef.current
+        .map((key) => {
+          let valore = cliente[key];
+          if (key === 'created_at' || key === 'data_privacy') {
+            valore = formatDataLeggibile(valore);
+          }
+          const testo = valore === null || valore === undefined ? '' : String(valore);
+          if (/[;"\n]/.test(testo)) {
+            return `"${testo.replace(/"/g, '""')}"`;
+          }
+          return testo;
+        })
+        .join(';')
+    );
+
+    const contenutoCSV = [intestazioni, ...righe].join('\n');
+    const blob = new Blob(['\uFEFF' + contenutoCSV], {
+      type: 'text/csv;charset=utf-8;',
+    });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = 'clienti.csv';
+    link.click();
+    URL.revokeObjectURL(url);
+  }
 
   return (
     <section className="px-4 pt-2 flex flex-col items-center text-center">
+      {/* Barra pulsanti: solo icone, con tooltip al passaggio del mouse */}
+      <div className="flex items-center gap-2 mb-2 w-full max-w-[95vw] justify-start">
+        <button
+          onClick={creaNuovoCliente}
+          title="Nuovo cliente"
+          className="flex items-center justify-center w-8 h-8 rounded border border-gray-300 text-green-600 hover:bg-green-50"
+        >
+          <i className="fa-solid fa-plus"></i>
+        </button>
+        <button
+          onClick={eliminaClienteSelezionato}
+          title="Elimina cliente selezionato"
+          className="flex items-center justify-center w-8 h-8 rounded border border-gray-300 text-red-600 hover:bg-red-50"
+        >
+          <i className="fa-solid fa-trash"></i>
+        </button>
+        <button
+          onClick={esportaCSV}
+          title="Esporta in CSV/Excel"
+          className="flex items-center justify-center w-8 h-8 rounded border border-gray-300 text-blue-600 hover:bg-blue-50"
+        >
+          <i className="fa-solid fa-file-export"></i>
+        </button>
+      </div>
 
-      {/* Messaggio di stato durante il salvataggio */}
-      {saving && <p className="text-blue-600 mb-2">Salvataggio in corso...</p>}
+      {saving && <p className="text-blue-600 mb-2 text-sm">Salvataggio in corso...</p>}
+      {error && <p className="text-red-600 mb-2 text-sm">{error}</p>}
 
-      {/* Messaggio di errore, se presente */}
-      {error && <p className="text-red-600 mb-2">{error}</p>}
-
-      {/* Contenitore esterno con dimensioni fisse: qui appaiono le
-          barre di scorrimento (sia verticale che orizzontale), invece
-          che sull'intera pagina */}
       <div
         className="w-full max-w-[95vw] border border-gray-300 rounded mb-4"
         style={{ overflowX: 'auto' }}
       >
-        <div ref={spreadsheetRef}></div>
+        <div ref={gridRef}></div>
       </div>
+
+      <style>{`
+        .righe-alternate tbody tr:nth-child(even) td {
+          background-color: #eaf3fb;
+        }
+        .righe-alternate tbody tr:nth-child(odd) td {
+          background-color: #ffffff;
+        }
+      `}</style>
     </section>
   );
 }

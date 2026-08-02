@@ -12,7 +12,7 @@
   "//dependencies": "Librerie usate DAVVERO dal sito quando gira (in produzione)",
   "dependencies": {
     "@supabase/supabase-js": "^2.111.0",
-    "jspreadsheet-ce": "^5.0.4",
+    "handsontable": "^18.0.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "react-router-dom": "^6.26.0"
