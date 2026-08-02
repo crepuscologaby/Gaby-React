@@ -59,8 +59,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     const contestoTestuale = pezzi.map((p: any, i: number) => `[${i + 1}] ${p.contenuto}`).join("\n---\n");
 
-    // Se tra i risultati c'è un'immagine pertinente, la mostriamo nel popup
-    const immaginePertinente = pezzi.find((p: any) => p.tipo === "immagine" && p.immagine_url);
+    // Mostriamo un'immagine SOLO se il pezzo di conoscenza più pertinente
+    // in assoluto (il primo, il più simile alla domanda) è un'immagine.
+    // Prima prendevamo la prima immagine trovata ovunque tra i risultati,
+    // e finiva per comparire anche quando non era davvero pertinente.
+    const primoPezzo = pezzi[0];
+    const immaginePertinente =
+      primoPezzo && primoPezzo.tipo === "immagine" && primoPezzo.immagine_url ? primoPezzo : null;
 
     // 3) Costruiamo il prompt per Gemini, chiedendo un output JSON strutturato
     const prompt = `Sei un assistente esperto sulla nazionale italiana di calcio.
