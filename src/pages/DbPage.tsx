@@ -107,6 +107,8 @@ export default function DbPage() {
             fixedColumnsStart: 3,
             filters: true,
             dropdownMenu: true,
+            wordWrap: false,
+            manualColumnResize: true,
             width: '100%',
             height: 'auto',
             stretchH: 'all',
@@ -130,14 +132,17 @@ export default function DbPage() {
 
               for (const change of changes as unknown[][]) {
                 const rigaVisibile = change[0] as number;
-                const nomeColonna = change[1] as string | number;
+                const indiceColonna = Number(change[1]);
                 const vecchioValore = change[2];
                 const nuovoValore = change[3];
 
                 if (vecchioValore === nuovoValore) continue;
 
-                const columnName = String(nomeColonna);
-                if (colonneSolaLettura.includes(columnName)) continue;
+                // change[1] arriva come indice numerico di colonna (0, 1, 2...),
+                // non come nome: lo traduciamo usando l'ordine con cui
+                // abbiamo caricato le colonne da Supabase
+                const columnName = columnNamesRef.current[indiceColonna];
+                if (!columnName || colonneSolaLettura.includes(columnName)) continue;
 
                 const indiceReale = istanza.toPhysicalRow(Number(rigaVisibile));
                 const cliente = tuttiIClientiRef.current[indiceReale];
