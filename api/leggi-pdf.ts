@@ -6,8 +6,8 @@
 
 import type { VercelRequest, VercelResponse } from "@vercel/node";
 import pdfParse from "pdf-parse";
-import { supabaseServer } from "./_lib/supabaseAdmin";
-import { creaEmbedding } from "./_lib/gemini";
+import { supabaseServer } from "./_lib/supabaseAdmin.js";
+import { creaEmbedding } from "./_lib/gemini.js";
 
 function spezzaTesto(testo: string, dimensioneBlocco = 1500): string[] {
   const pulito = testo.replace(/\s+/g, " ").trim();

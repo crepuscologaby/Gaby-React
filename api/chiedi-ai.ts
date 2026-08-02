@@ -6,8 +6,8 @@
 // non più un semplice testo.
 
 import type { VercelRequest, VercelResponse } from "@vercel/node";
-import { supabaseServer } from "./_lib/supabaseAdmin";
-import { creaEmbedding, generaRispostaStrutturata, coloreCasuale } from "./_lib/gemini";
+import { supabaseServer } from "./_lib/supabaseAdmin.js";
+import { creaEmbedding, generaRispostaStrutturata, coloreCasuale } from "./_lib/gemini.js";
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== "POST") {

@@ -7,8 +7,8 @@
 // come nuova riga di conoscenza collegata a quell'immagine.
 
 import type { VercelRequest, VercelResponse } from "@vercel/node";
-import { supabaseServer } from "./_lib/supabaseAdmin";
-import { creaEmbedding, descriviImmagine } from "./_lib/gemini";
+import { supabaseServer } from "./_lib/supabaseAdmin.js";
+import { creaEmbedding, descriviImmagine } from "./_lib/gemini.js";
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== "POST") {

@@ -5,8 +5,8 @@
 // stare nel codice del browser. Quindi ora il salvataggio passa da qui.
 
 import type { VercelRequest, VercelResponse } from "@vercel/node";
-import { supabaseServer } from "./_lib/supabaseAdmin";
-import { creaEmbedding } from "./_lib/gemini";
+import { supabaseServer } from "./_lib/supabaseAdmin.js";
+import { creaEmbedding } from "./_lib/gemini.js";
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== "POST") {
