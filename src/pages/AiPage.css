@@ -84,3 +84,10 @@
   font-weight: bold;
   cursor: pointer;
 }
+
+.ai-answer-text {
+  color: #1a1a1a;
+  line-height: 1.5;
+  text-align: left;
+  white-space: pre-wrap; /* rispetta gli "a capo" che scrive Gemini */
+}

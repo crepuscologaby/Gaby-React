@@ -17,9 +17,38 @@ const AiPage: React.FC = () => {
 
   // Funzione chiamata quando si preme "Chiedi"
   // (per ora non fa nulla di reale, solo un log per capire che funziona)
-  const handleChiedi = () => {
-    console.log("Domanda inviata (da collegare al motore AI):", domanda);
-  };
+// Aggiungi questi stati insieme agli altri (domanda, nuovaInfo, ecc.)
+const [rispostaAI, setRispostaAI] = useState<string>("");
+const [caricamentoRisposta, setCaricamentoRisposta] = useState<boolean>(false);
+
+// Sostituisce la vecchia handleChiedi (quella con solo console.log)
+const handleChiedi = async () => {
+  if (!domanda.trim()) return;
+
+  setCaricamentoRisposta(true);
+  setRispostaAI("");
+
+  try {
+    // Chiamiamo il nostro endpoint su Vercel (api/chiedi-ai.ts)
+    const risposta = await fetch("/api/chiedi-ai", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ domanda }),
+    });
+
+    const dati = await risposta.json();
+
+    if (dati.errore) {
+      setRispostaAI("Errore: " + dati.errore);
+    } else {
+      setRispostaAI(dati.risposta);
+    }
+  } catch (errore) {
+    setRispostaAI("Errore nel contattare l'assistente.");
+  }
+
+  setCaricamentoRisposta(false);
+};
 
   // Funzione chiamata quando si preme il pulsante del microfono
   // (per ora finta, la colleghiamo quando facciamo l'input vocale)
@@ -87,10 +116,13 @@ const handleSalvaInfo = async () => {
       <section className="ai-section ai-answer-section">
         <h2>Risposta</h2>
         <div className="ai-answer-placeholder">
-          {/* Per ora vuoto: qui in futuro comparirà il popup di risposta */}
-          <p className="ai-placeholder-text">
-            Le risposte appariranno qui.
-          </p>
+          {caricamentoRisposta && <p className="ai-placeholder-text">Sto pensando...</p>}
+          {!caricamentoRisposta && !rispostaAI && (
+            <p className="ai-placeholder-text">Le risposte appariranno qui.</p>
+          )}
+          {!caricamentoRisposta && rispostaAI && (
+            <p className="ai-answer-text">{rispostaAI}</p>
+          )}
         </div>
       </section>
 
