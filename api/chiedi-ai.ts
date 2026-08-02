@@ -56,7 +56,7 @@ Rispondi in italiano, in modo chiaro e sintetico.`;
   try {
     // 3) Chiamiamo l'API gratuita di Google Gemini
     const rispostaGemini = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${process.env.GEMINI_API_KEY}`,
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=${process.env.GEMINI_API_KEY}`,
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -73,7 +73,7 @@ Rispondi in italiano, in modo chiaro e sintetico.`;
       datiRisposta?.candidates?.[0]?.content?.parts?.[0]?.text ||
       "Non sono riuscito a generare una risposta.";
 
-    return res.status(200).json({ debug: datiRisposta });
+    return res.status(200).json({ risposta: testoRisposta });
   } catch (erroreGemini) {
     return res.status(500).json({ errore: "Errore nel contattare Gemini" });
   }
