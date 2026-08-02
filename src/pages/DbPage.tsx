@@ -109,6 +109,8 @@ export default function DbPage() {
             dropdownMenu: true,
             wordWrap: false,
             manualColumnResize: true,
+            columnSorting: true,
+
             width: '100%',
             height: 'auto',
             stretchH: 'all',
