@@ -17,6 +17,7 @@ import TempoRealePage from "./pages/TempoRealePage";
 import RicercaPage from "./pages/RicercaPage";
 import HelpPage from "./pages/HelpPage";
 
+
 export default function App() {
   return (
     // BrowserRouter "attiva" il sistema di navigazione tra pagine per tutto ciò che c'è dentro

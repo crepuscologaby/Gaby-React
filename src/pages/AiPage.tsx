@@ -5,6 +5,8 @@
 
 import React, { useState } from "react";
 import "./AiPage.css"; // il file di stile che creiamo subito dopo
+// Aggiungi questo import in cima ad AiPage.tsx, insieme agli altri
+import { supabase } from "../lib/supabaseClient";
 
 const AiPage: React.FC = () => {
   // Testo che l'utente scrive nella domanda
@@ -27,9 +29,30 @@ const AiPage: React.FC = () => {
 
   // Funzione chiamata quando si preme "Salva" nella zona apprendimento
   // (per ora non fa nulla di reale, solo un log)
-  const handleSalvaInfo = () => {
-    console.log("Nuova informazione da salvare (da collegare a Supabase):", nuovaInfo);
-  };
+// Sostituisci la vecchia handleSalvaInfo (quella con solo il console.log) con questa
+
+// Messaggio da mostrare dopo il salvataggio (successo o errore)
+const [messaggioSalvataggio, setMessaggioSalvataggio] = useState<string>("");
+
+const handleSalvaInfo = async () => {
+  // Non salviamo se la textarea è vuota
+  if (!nuovaInfo.trim()) {
+    setMessaggioSalvataggio("Scrivi qualcosa prima di salvare.");
+    return;
+  }
+
+  // insert manda una nuova riga alla tabella ai_conoscenza
+  const { error } = await supabase
+    .from("ai_conoscenza")
+    .insert({ contenuto: nuovaInfo });
+
+  if (error) {
+    setMessaggioSalvataggio("Errore nel salvataggio: " + error.message);
+  } else {
+    setMessaggioSalvataggio("Informazione salvata!");
+    setNuovaInfo(""); // svuota la textarea dopo il salvataggio
+  }
+};
 
   return (
     <div className="ai-page">
@@ -84,6 +107,7 @@ const AiPage: React.FC = () => {
         <button className="ai-save-button" onClick={handleSalvaInfo}>
           Salva
         </button>
+        {messaggioSalvataggio && <p className="ai-save-message">{messaggioSalvataggio}</p>}
       </section>
     </div>
   );
