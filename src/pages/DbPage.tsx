@@ -31,6 +31,41 @@ function formatDataPerSalvataggio(dataLeggibile: string): string | null {
 // Colonne che non devono mai essere modificate dall'utente
 const colonneSolaLettura = ['id', 'client_id', 'created_at'];
 
+// Editor personalizzato per la colonna data_privacy: mostra un vero
+// selettore di data e ora nativo del browser (input datetime-local),
+// invece del semplice campo di testo.
+class DataOraEditor extends Handsontable.editors.TextEditor {
+  createElements() {
+    super.createElements();
+    // Sostituiamo l'input di testo standard con uno di tipo datetime-local
+    this.TEXTAREA = document.createElement('input');
+    this.TEXTAREA.setAttribute('type', 'datetime-local');
+    this.TEXTAREA.className = 'handsontableInput';
+    this.textareaStyle = this.TEXTAREA.style;
+    this.textareaStyle.width = '';
+    this.textareaStyle.height = '';
+
+    // Sostituiamo l'elemento nel DOM
+    this.TEXTAREA_PARENT.innerHTML = '';
+    this.TEXTAREA_PARENT.appendChild(this.TEXTAREA);
+  }
+
+  // Quando l'editor si apre, convertiamo "YYYY-MM-DD HH:mm" (il formato
+  // che usiamo per mostrare la data) nel formato richiesto dall'input
+  // datetime-local, che è "YYYY-MM-DDTHH:mm"
+  setValue(value: string) {
+    const valoreConvertito = value ? value.replace(' ', 'T') : '';
+    super.setValue(valoreConvertito);
+  }
+
+  // Quando l'utente conferma, riconvertiamo dal formato dell'input
+  // ("YYYY-MM-DDTHH:mm") al nostro formato con lo spazio
+  getValue() {
+    const valoreGrezzo = super.getValue() as string;
+    return valoreGrezzo ? valoreGrezzo.replace('T', ' ') : '';
+  }
+}
+
 export default function DbPage() {
   const gridRef = useRef<HTMLDivElement>(null);
   const instanceRef = useRef<Handsontable | null>(null);
@@ -42,10 +77,16 @@ export default function DbPage() {
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
-  function costruisciColonne() {
+function costruisciColonne() {
     return columnNamesRef.current.map((key) => {
       if (key === 'enable') {
         return { type: 'checkbox' as const };
+      }
+      if (key === 'data_privacy') {
+        return {
+          type: 'text' as const,
+          editor: DataOraEditor,
+        };
       }
       return {
         type: 'text' as const,
